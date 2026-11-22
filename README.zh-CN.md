@@ -8,6 +8,8 @@ AZGodotBuildTool 用一条命令构建整个 Godot 项目的 C++ 代码和原生
 
 桌面项目管理器支持创建、导入和扫描 Godot 项目，用指定的编辑器打开项目，以及为单个项目启用 C++。
 
+右上角的语言按钮显示当前语言（**简体中文** 或 **English**），点击即可切换。首次启动跟随系统语言，手动选择后会记住偏好。在环境设置中，将鼠标悬停在字段标题行最右端的圆形 **?** 上，可查看支持的版本。
+
 **从源码运行。** 在仓库根目录执行 `dotnet build AZGodotBuildTool/AZGodotBuildTool.csproj -c Debug` 编译构建工具。用 Godot 4.7.2 打开[项目管理器的 Godot 工程](AZGodotProjectManager/project.godot)，按 **F5** 启动。
 
 1. 打开 **环境设置**，选择本机 Godot 编辑器的可执行文件。管理器会读取版本，支持 Godot 4.7.x stable。使用 C++ 时，还需选择含有 `CMakeLists.txt` 和 `gdextension/extension_api-4-7.json` 的 godot-cpp 源码目录。目录不合适时，可以重新选择，也可以选择下载受支持的 `10.0.0-stable`。确认版本和保存位置后才会开始下载。

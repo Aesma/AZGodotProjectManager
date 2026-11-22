@@ -13,14 +13,14 @@ func start(parent: String, version: String) -> void:
 	if busy:
 		return
 	if version != Projects.SDK_TAG or not DirAccess.dir_exists_absolute(parent):
-		finished.emit("", "请选择支持的版本和现有目录。")
+		finished.emit("", "Select a supported version and an existing folder.")
 		return
 	destination = parent.path_join("godot-cpp-" + version)
 	if DirAccess.dir_exists_absolute(destination) or FileAccess.file_exists(destination):
 		if Projects.sdk_valid(destination):
 			finished.emit(destination, "")
 		else:
-			finished.emit("", "目标已存在，请选择其他保存目录。")
+			finished.emit("", "The destination already exists. Select a different folder.")
 		return
 	var unique := ".azgodotprojectmanager-" + str(OS.get_process_id()) + "-" + str(Time.get_ticks_usec())
 	archive = parent.path_join(unique + ".zip")
@@ -33,26 +33,26 @@ func start(parent: String, version: String) -> void:
 	request.request_completed.connect(_received, CONNECT_ONE_SHOT)
 	var err := request.request(Projects.SDK_URL)
 	if err != OK:
-		_complete("无法开始下载：" + error_string(err))
+		_complete(tr("Could not start download: %s") % error_string(err))
 
 func _process(_delta: float) -> void:
 	if busy and is_instance_valid(request):
-		progress.emit("正在下载 godot-cpp · %.1f MiB" % (request.get_downloaded_bytes() / 1048576.0))
+		progress.emit(tr("Downloading godot-cpp · %.1f MiB") % (request.get_downloaded_bytes() / 1048576.0))
 
 func _received(result: int, status: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
 	request.queue_free()
 	request = null
 	if result != HTTPRequest.RESULT_SUCCESS or status != 200:
-		_complete("下载失败（HTTP %d，结果 %d）。" % [status, result])
+		_complete(tr("Download failed (HTTP %d, result %d).") % [status, result])
 		return
-	progress.emit("正在解压 godot-cpp…")
+	progress.emit("Extracting godot-cpp…")
 	var error := await extract(get_tree(), archive, staging, destination)
 	_complete(error)
 
 static func extract(tree: SceneTree, zip_path: String, stage: String, dest: String) -> String:
 	var zip := ZIPReader.new()
 	if zip.open(zip_path) != OK:
-		return "无法读取下载的 ZIP 文件。"
+		return "Could not read the downloaded ZIP file."
 	var files := zip.get_files()
 	var count := 0
 	for entry in files:
@@ -64,24 +64,24 @@ static func extract(tree: SceneTree, zip_path: String, stage: String, dest: Stri
 		var relative := entry.substr(slash + 1)
 		if relative.is_absolute_path() or relative.contains("\\") or relative.contains(":") or ".." in relative.split("/"):
 			zip.close()
-			return "压缩包内存在无效路径。"
+			return "The archive contains an invalid path."
 		var file := stage.path_join(relative)
 		if DirAccess.make_dir_recursive_absolute(file.get_base_dir()) != OK:
 			zip.close()
-			return "无法创建 SDK 目录。"
+			return "Could not create the SDK directory."
 		var writer := FileAccess.open(file, FileAccess.WRITE)
 		if writer == null or not writer.store_buffer(zip.read_file(entry)):
 			zip.close()
-			return "无法写入 " + file
+			return TranslationServer.translate("Could not write to %s") % file
 		writer.close()
 		count += 1
 		if count % 48 == 0:
 			await tree.process_frame
 	zip.close()
 	if not Projects.sdk_valid(stage):
-		return "包中缺少 CMakeLists.txt 或 Godot 4.7 API。"
+		return "The archive is missing CMakeLists.txt or the Godot 4.7 API."
 	if DirAccess.dir_exists_absolute(dest) or DirAccess.rename_absolute(stage, dest) != OK:
-		return "无法安装到 " + dest
+		return TranslationServer.translate("Could not install to %s") % dest
 	return ""
 
 static func _remove_stage(dir: String) -> void:

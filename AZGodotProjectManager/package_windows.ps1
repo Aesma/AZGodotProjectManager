@@ -16,7 +16,7 @@ $source = $app
 if ($ReleaseTemplate) {
     $template = (Resolve-Path -LiteralPath $ReleaseTemplate).Path.Replace('\', '/')
     $source = [IO.Directory]::CreateDirectory((Join-Path $app '.build/export-project')).FullName
-    foreach ($name in 'scripts','ui','templates') {
+    foreach ($name in 'scripts','ui','templates','i18n') {
         $dest = [IO.Directory]::CreateDirectory((Join-Path $source $name)).FullName
         foreach ($file in Get-ChildItem -LiteralPath (Join-Path $app $name) -File) {
             Copy-Item -LiteralPath $file.FullName -Destination $dest -Force

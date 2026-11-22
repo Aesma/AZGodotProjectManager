@@ -1,0 +1,504 @@
+msgid ""
+msgstr ""
+"Language: zh_CN\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "AZGodotProjectManager · Project Manager"
+msgstr "AZGodotProjectManager · 项目管理器"
+
+msgid "Project Manager"
+msgstr "项目管理器"
+
+msgid "Open Godot"
+msgstr "打开原版 Godot"
+
+msgid "Environment Settings"
+msgstr "环境设置"
+
+msgid "Settings"
+msgstr "环境设置"
+
+msgid "Create New Project"
+msgstr "新建项目"
+
+msgid "Import Existing Project"
+msgstr "导入现有项目"
+
+msgid "Import…"
+msgstr "导入"
+
+msgid "Scan…"
+msgstr "扫描"
+
+msgid "Filter projects"
+msgstr "筛选项目"
+
+msgid "Sort by"
+msgstr "排序"
+
+msgid "Last modified"
+msgstr "最近修改"
+
+msgid "Project name"
+msgstr "项目名称"
+
+msgid "Projects"
+msgstr "项目"
+
+msgid "Open Project"
+msgstr "打开项目"
+
+msgid "Build Output"
+msgstr "构建输出"
+
+msgid "Hide"
+msgstr "收起"
+
+msgid "Could not save settings"
+msgstr "无法保存设置"
+
+msgid "Godot not configured"
+msgstr "Godot 未配置"
+
+msgid "godot-cpp not configured"
+msgstr "godot-cpp 未配置"
+
+msgid "Projects  ·  %d"
+msgstr "项目  ·  %d"
+
+msgid "No projects yet"
+msgstr "还没有项目"
+
+msgid "No matching projects"
+msgstr "没有匹配的项目"
+
+msgid "Create a project or import an existing project.godot."
+msgstr "创建一个项目，或导入已有的 project.godot。"
+
+msgid "Try a different name or path."
+msgstr "试试其他名称或目录。"
+
+msgid "Could not open project"
+msgstr "无法打开项目"
+
+msgid "File not found: %s"
+msgstr "找不到 %s"
+
+msgid "Select a compatible Godot editor first."
+msgstr "请先选择兼容的 Godot 编辑器。"
+
+msgid "Could not launch Godot"
+msgstr "启动失败"
+
+msgid "Create Project"
+msgstr "创建项目"
+
+msgid "Create"
+msgstr "创建"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Parent folder (the project will have its own subfolder)"
+msgstr "父目录（将创建同名项目文件夹）"
+
+msgid "Browse…"
+msgstr "浏览…"
+
+msgid "Select Parent Folder"
+msgstr "选择父目录"
+
+msgid "Use C++ (AZGodotBuildTool)"
+msgstr "使用 C++（AZGodotBuildTool）"
+
+msgid "C++ tools are not ready"
+msgstr "C++ 环境未就绪"
+
+msgid "Select godot-cpp in Environment Settings and make sure the build tool is available."
+msgstr "请先在环境设置中选择 godot-cpp，并确认构建工具可用。"
+
+msgid "Could not create project"
+msgstr "无法创建项目"
+
+msgid "Import Godot Project"
+msgstr "导入 Godot 项目"
+
+msgid "Could not import project"
+msgstr "无法导入"
+
+msgid "Select project.godot or the folder containing it."
+msgstr "请选择 project.godot 或包含它的项目目录。"
+
+msgid "Scan Folder"
+msgstr "扫描目录"
+
+msgid "Scanning for projects…"
+msgstr "正在扫描项目…"
+
+msgid "Could not scan folder"
+msgstr "无法扫描"
+
+msgid "Scan complete"
+msgstr "扫描完成"
+
+msgid "No project.godot files were found in this folder."
+msgstr "所选目录内没有找到 project.godot。"
+
+msgid "Could not read project"
+msgstr "无法读取项目"
+
+msgid "Enable C++"
+msgstr "启用 C++"
+
+msgid "Keep as is"
+msgstr "保留当前项目"
+
+msgid "Enable C++ for “%s” and run its first build?\n%s"
+msgstr "为「%s」启用 C++ 项目结构并执行首次构建吗？\n%s"
+
+msgid "Enable for selected projects"
+msgstr "启用选中的项目"
+
+msgid "Select projects to enable C++ for"
+msgstr "选择要接入 C++ 构建的项目"
+
+msgid "After setup, click Enable C++ on the project's row."
+msgstr "配置完成后，点击对应项目行的「启用 C++」。"
+
+msgid "A compatible godot-cpp is required to enable C++."
+msgstr "启用 C++ 需要兼容的 godot-cpp。"
+
+msgid "Build tool not found: %s"
+msgstr "找不到构建工具：%s"
+
+msgid "Build Output  ·  %s"
+msgstr "构建输出  ·  %s"
+
+msgid "No build output yet"
+msgstr "暂无构建输出"
+
+msgid "The last build was interrupted. Retry to continue."
+msgstr "上次构建中断，请重试。"
+
+msgid "Done"
+msgstr "完成"
+
+msgid "Godot editor"
+msgstr "Godot 编辑器"
+
+msgid "Select a Godot executable"
+msgstr "选择 Godot 可执行文件"
+
+msgid "godot-cpp source directory"
+msgstr "godot-cpp 源码目录"
+
+msgid "Select the folder containing CMakeLists.txt"
+msgstr "选择包含 CMakeLists.txt 的目录"
+
+msgid "Supported Godot editors\n4.7.x stable (tested with 4.7.2)"
+msgstr "支持的 Godot 编辑器版本\n4.7.x 稳定版（已验证 4.7.2）"
+
+msgid "SDK detected"
+msgstr "已识别 SDK"
+
+msgid "Supported godot-cpp versions\n10.0.0-stable (Godot 4.7 API)"
+msgstr "支持的 godot-cpp 版本\n10.0.0-stable（Godot 4.7 API）"
+
+msgid "Select Godot Editor"
+msgstr "选择 Godot 编辑器"
+
+msgid "Checking engine version…"
+msgstr "正在读取引擎版本…"
+
+msgid "File not found"
+msgstr "文件不存在"
+
+msgid "Selected version: %s\nSupported versions: Godot 4.7.x stable."
+msgstr "所选版本：%s\n支持范围：Godot 4.7.x stable。"
+
+msgid "Unknown"
+msgstr "未知"
+
+msgid "This program does not include the project manager. Select the Godot editor."
+msgstr "所选程序不提供项目管理器，请选择 Godot 编辑器。"
+
+msgid "Unsupported engine"
+msgstr "无法使用这个引擎"
+
+msgid "Select godot-cpp Source Directory"
+msgstr "选择 godot-cpp 源码目录"
+
+msgid "Compatible godot-cpp not found"
+msgstr "未找到兼容的 godot-cpp"
+
+msgid "This folder is missing CMakeLists.txt or the 4.7 API.\nChoose a version of godot-cpp to download?"
+msgstr "所选目录缺少 CMakeLists.txt 或 4.7 API。\n要选择版本并下载 godot-cpp 吗？"
+
+msgid "Choose version…"
+msgstr "选择下载版本…"
+
+msgid "Choose another folder"
+msgstr "重新选择"
+
+msgid "Download godot-cpp"
+msgstr "下载 godot-cpp"
+
+msgid "Confirm download"
+msgstr "确认下载"
+
+msgid "Supported version"
+msgstr "支持的版本"
+
+msgid "Official source"
+msgstr "官方来源"
+
+msgid "Install location"
+msgstr "安装位置"
+
+msgid "Choose parent folder…"
+msgstr "选择父目录…"
+
+msgid "Select Download Folder"
+msgstr "选择保存目录"
+
+msgid "Could not install godot-cpp"
+msgstr "godot-cpp 安装失败"
+
+msgid "Set up C++ build"
+msgstr "接入 C++ 构建"
+
+msgid "C++ build failed · Retry"
+msgstr "C++ 构建失败 · 重试"
+
+msgid "✓  C++ enabled"
+msgstr "✓  已启用 C++"
+
+msgid "C++ build queued…"
+msgstr "等待启用 C++…"
+
+msgid "Enabling C++…"
+msgstr "正在启用 C++…"
+
+msgid "Project unavailable"
+msgstr "项目不可用"
+
+msgid "OK"
+msgstr "确定"
+
+msgid "Could not read project.godot"
+msgstr "无法读取 project.godot"
+
+msgid "Enter a valid project name."
+msgstr "请输入有效的项目名称。"
+
+msgid "Select a parent folder for the project."
+msgstr "请选择项目的父目录。"
+
+msgid "The destination already exists. Choose another project name."
+msgstr "目标已存在，请选择新的项目名称。"
+
+msgid "Could not create project: %s"
+msgstr "创建失败：%s"
+
+msgid "Select godot-cpp with the 4.7 API in Environment Settings."
+msgstr "请在环境设置中选择包含 4.7 API 的 godot-cpp。"
+
+msgid "AZGodotBuildTool.dll not found: %s"
+msgstr "找不到 AZGodotBuildTool.dll：%s"
+
+msgid "Could not read %s"
+msgstr "无法读取 %s"
+
+msgid "Could not create C++ source file: %s"
+msgstr "无法创建 C++ 源文件：%s"
+
+msgid "Could not create C++ module: %s"
+msgstr "无法创建 C++ 模块：%s"
+
+msgid "Could not update project.godot: %s"
+msgstr "无法更新 project.godot：%s"
+
+msgid "Could not start %s"
+msgstr "无法启动 %s"
+
+msgid "Reading engine information timed out."
+msgstr "读取引擎信息超时。"
+
+msgid "Select a supported version and an existing folder."
+msgstr "请选择支持的版本和现有目录。"
+
+msgid "The destination already exists. Select a different folder."
+msgstr "目标已存在，请选择其他保存目录。"
+
+msgid "Could not start download: %s"
+msgstr "无法开始下载：%s"
+
+msgid "Downloading godot-cpp · %.1f MiB"
+msgstr "正在下载 godot-cpp · %.1f MiB"
+
+msgid "Download failed (HTTP %d, result %d)."
+msgstr "下载失败（HTTP %d，结果 %d）。"
+
+msgid "Extracting godot-cpp…"
+msgstr "正在解压 godot-cpp…"
+
+msgid "Could not read the downloaded ZIP file."
+msgstr "无法读取下载的 ZIP 文件。"
+
+msgid "The archive contains an invalid path."
+msgstr "压缩包内存在无效路径。"
+
+msgid "Could not create the SDK directory."
+msgstr "无法创建 SDK 目录。"
+
+msgid "Could not write to %s"
+msgstr "无法写入 %s"
+
+msgid "The archive is missing CMakeLists.txt or the Godot 4.7 API."
+msgstr "包中缺少 CMakeLists.txt 或 Godot 4.7 API。"
+
+msgid "Could not install to %s"
+msgstr "无法安装到 %s"
+
+msgid "Build command exited with code %s"
+msgstr "构建命令退出码 %s"
+
+msgid "Interface language"
+msgstr "界面语言"
+
+msgid "Close"
+msgstr "关闭"
+
+msgid "Open"
+msgstr "打开"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Select Current Folder"
+msgstr "选择当前文件夹"
+
+msgid "Select This Folder"
+msgstr "选择此文件夹"
+
+msgid "Path:"
+msgstr "路径："
+
+msgid "File:"
+msgstr "文件："
+
+msgid "Filter:"
+msgstr "筛选："
+
+msgid "Filename Filter:"
+msgstr "文件名筛选："
+
+msgid "Favorites:"
+msgstr "收藏："
+
+msgid "Recent:"
+msgstr "最近："
+
+msgid "Directories & Files:"
+msgstr "目录和文件："
+
+msgid "All Files"
+msgstr "所有文件"
+
+msgid "All Recognized"
+msgstr "所有可识别的文件"
+
+msgid "Copy Path"
+msgstr "复制路径"
+
+msgid "Delete"
+msgstr "删除"
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "Create Folder"
+msgstr "创建文件夹"
+
+msgid "New Folder..."
+msgstr "新建文件夹…"
+
+msgid "Name:"
+msgstr "名称："
+
+msgid "Network"
+msgstr "网络"
+
+msgid "Drive"
+msgstr "驱动器"
+
+msgid "Go to previous folder."
+msgstr "转到上一个文件夹。"
+
+msgid "Go to next folder."
+msgstr "转到下一个文件夹。"
+
+msgid "Go to parent folder."
+msgstr "转到上级文件夹。"
+
+msgid "Refresh files."
+msgstr "刷新文件。"
+
+msgid "Create a new folder."
+msgstr "创建一个文件夹。"
+
+msgid "(Un)favorite current folder."
+msgstr "收藏或取消收藏当前文件夹。"
+
+msgid "Toggle the visibility of hidden files."
+msgstr "显示或隐藏隐藏文件。"
+
+msgid "Toggle the visibility of the filter for file names."
+msgstr "显示或隐藏文件名筛选栏。"
+
+msgid "View items as a grid of thumbnails."
+msgstr "按缩略图查看。"
+
+msgid "View items as a list."
+msgstr "按列表查看。"
+
+msgid "Sort files"
+msgstr "文件排序"
+
+msgid "Sort by Modified Time (Newest First)"
+msgstr "按修改时间（从新到旧）"
+
+msgid "Sort by Modified Time (Oldest First)"
+msgstr "按修改时间（从旧到新）"
+
+msgid "Sort by Name (Ascending)"
+msgstr "按名称升序"
+
+msgid "Sort by Name (Descending)"
+msgstr "按名称降序"
+
+msgid "Sort by Type (Ascending)"
+msgstr "按类型升序"
+
+msgid "Sort by Type (Descending)"
+msgstr "按类型降序"
+
+msgid "Show Package Contents"
+msgstr "显示包内容"
+
+msgid "Could not create folder."
+msgstr "无法创建文件夹。"
+
+msgid "Invalid extension, or empty filename."
+msgstr "扩展名无效或文件名为空。"
+
+msgid "You don't have permission to access contents of this folder."
+msgstr "无权访问此文件夹的内容。"
+
+msgid "Delete the selected file?\nDepending on your filesystem configuration, the files will either be moved to the system trash or deleted permanently."
+msgstr "删除所选文件吗？\n根据文件系统设置，文件将移至回收站或永久删除。"
+
+msgid "File \"%s\" already exists.\nDo you want to overwrite it?"
+msgstr "文件“%s”已存在。\n要覆盖它吗？"
+

@@ -4,7 +4,8 @@ extends RefCounted
 static func run(tree: SceneTree, executable: String, arguments: PackedStringArray, output: Callable = Callable(), timeout_ms := 0) -> Dictionary:
 	var child := OS.execute_with_pipe(executable, arguments, false)
 	if child.is_empty():
-		return {"code":-1, "text":"无法启动 " + executable}
+		return {"code":-1, "issue":"Could not start %s", "args":[executable],
+			"text":TranslationServer.translate("Could not start %s") % executable}
 	var started := Time.get_ticks_msec()
 	var streams := [child.stdio, child.stderr]
 	var partial := [PackedByteArray(), PackedByteArray()]
@@ -32,7 +33,8 @@ static func run(tree: SceneTree, executable: String, arguments: PackedStringArra
 			return {"code":OS.get_process_exit_code(child.pid), "text":text}
 		if timeout_ms > 0 and Time.get_ticks_msec() - started > timeout_ms:
 			OS.kill(child.pid)
-			return {"code":-1, "text":"读取引擎信息超时。"}
+			return {"code":-1, "issue":"Reading engine information timed out.",
+				"text":TranslationServer.translate("Reading engine information timed out.")}
 		await tree.process_frame
 	return {}
 

@@ -63,7 +63,7 @@ static func describe(root: String) -> Dictionary:
 	var path := settings(root)
 	var err := cfg.load(path)
 	if err != OK:
-		return {"root":root, "name":root.get_file(), "error":"无法读取 project.godot", "version":"", "managed":false, "native":false, "icon":"", "time":0}
+		return {"root":root, "name":root.get_file(), "error":"Could not read project.godot", "version":"", "managed":false, "native":false, "icon":"", "time":0}
 	var version := ""
 	for feature in cfg.get_value("application", "config/features", PackedStringArray()):
 		if str(feature).get_slice(".", 0).is_valid_int():
@@ -104,12 +104,12 @@ static func write_text(path: String, text: String) -> Error:
 static func create(parent: String, title: String, cpp: bool) -> Dictionary:
 	title = title.strip_edges()
 	if title.is_empty() or not title.is_valid_filename() or title in [".", ".."]:
-		return {"error":"请输入有效的项目名称。"}
+		return {"error":"Enter a valid project name."}
 	if not parent.is_absolute_path() or not DirAccess.dir_exists_absolute(parent):
-		return {"error":"请选择项目的父目录。"}
+		return {"error":"Select a parent folder for the project."}
 	var root := normalize(parent.path_join(title))
 	if DirAccess.dir_exists_absolute(root) or FileAccess.file_exists(root):
-		return {"error":"目标已存在，请选择新的项目名称。"}
+		return {"error":"The destination already exists. Choose another project name."}
 	var config := "config_version=5\n\n[application]\nconfig/name=%s\nrun/main_scene=\"res://Main.tscn\"\nconfig/features=PackedStringArray(\"4.7\", \"GL Compatibility\")\n\n[rendering]\nrenderer/rendering_method=\"gl_compatibility\"\n" % JSON.stringify(title)
 	var scene := '[gd_scene format=3]\n\n[node name="Main" type="Node"]\n'
 	if cpp:
@@ -124,17 +124,17 @@ static func create(parent: String, title: String, cpp: bool) -> Dictionary:
 		for file in DirAccess.get_files_at(stage):
 			DirAccess.remove_absolute(stage.path_join(file))
 		DirAccess.remove_absolute(stage)
-	return {"root":root, "error":"" if err == OK else "创建失败：" + error_string(err)}
+	return {"root":root, "error":"" if err == OK else TranslationServer.translate("Could not create project: %s") % error_string(err)}
 
-static func enable_cpp(root: String, sdk: String, tool: String) -> String:
+static func enable_cpp(root: String, sdk: String, tool: String) -> Dictionary:
 	if not sdk_valid(sdk):
-		return "请在环境设置中选择包含 4.7 API 的 godot-cpp。"
+		return {"issue":"Select godot-cpp with the 4.7 API in Environment Settings."}
 	if not FileAccess.file_exists(tool):
-		return "找不到 AZGodotBuildTool.dll：" + tool
+		return {"issue":"AZGodotBuildTool.dll not found: %s", "args":[tool]}
 	var cfg := ConfigFile.new()
 	var path := settings(root)
 	if cfg.load(path) != OK:
-		return "无法读取 " + path
+		return {"issue":"Could not read %s", "args":[path]}
 	var text := FileAccess.get_file_as_string(path)
 	var lines := text.split("\n")
 	var begin := -1
@@ -171,12 +171,12 @@ static func enable_cpp(root: String, sdk: String, tool: String) -> String:
 			var dest := staged.path_join(spec[0])
 			var content := FileAccess.get_file_as_string("res://templates/" + str(spec[1]))
 			if content.is_empty() or write_text(dest, content) != OK:
-				return "无法创建 C++ 源文件：" + dest
+				return {"issue":"Could not create C++ source file: %s", "args":[dest]}
 		if DirAccess.dir_exists_absolute(module):
 			# Leave an existing, non-native Gameplay directory intact.
 			module = root.path_join("Source/ProjectNative")
 		if DirAccess.make_dir_recursive_absolute(module.get_base_dir()) != OK or DirAccess.rename_absolute(staged, module) != OK:
-			return "无法创建 C++ 模块：" + module
+			return {"issue":"Could not create C++ module: %s", "args":[module]}
 	if updated != text:
 		var temp := path + ".azgodotprojectmanager-" + str(Time.get_ticks_usec()) + ".tmp"
 		var err := write_text(temp, updated)
@@ -184,5 +184,5 @@ static func enable_cpp(root: String, sdk: String, tool: String) -> String:
 			err = DirAccess.rename_absolute(temp, path)
 		if err != OK:
 			DirAccess.remove_absolute(temp)
-			return "无法更新 project.godot：" + error_string(err)
-	return ""
+			return {"issue":"Could not update project.godot: %s", "args":[error_string(err)]}
+	return {}

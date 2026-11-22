@@ -22,9 +22,13 @@ var rows: VBoxContainer
 var empty: CenterContainer
 var empty_title: Label
 var empty_hint: Label
+var empty_actions: HBoxContainer
 var filter: LineEdit
 var order: OptionButton
+var language_menu: MenuButton
+const LANGUAGES := ["zh_CN", "en"]
 var open_button: Button
+var output_button: Button
 var summary: Label
 var env_status: Label
 var log_panel: PanelContainer
@@ -36,15 +40,19 @@ var new_parent: LineEdit
 var new_cpp: CheckBox
 
 func _ready() -> void:
-	get_window().min_size = Vector2i(800, 490)
-	get_window().title = "AZGodotProjectManager · 项目管理器"
+	_size_window(true)
+	get_window().title = "AZGodotProjectManager · Project Manager"
 	theme = UI.theme()
 	if FileAccess.file_exists(settings_file):
 		store.load(settings_file)
+	var language = store.get_value("ui", "language", "")
+	if language not in LANGUAGES:
+		language = "zh_CN" if OS.get_locale_language() == "zh" else "en"
+	TranslationServer.set_locale(language)
 	projects = store.get_value("projects", "items", {})
 	for path in projects:
 		if projects[path].get("build", "") == "building":
-			projects[path] = {"build":"failed", "message":"上次构建中断，请重试。"}
+			projects[path] = {"build":"failed", "issue":"The last build was interrupted. Retry to continue."}
 	environment.engine_path = store.get_value("environment", "engine_path", "")
 	environment.engine_version = store.get_value("environment", "engine_version", "")
 	environment.sdk_path = store.get_value("environment", "sdk_path", "")
@@ -56,6 +64,31 @@ func _ready() -> void:
 	refresh()
 	get_window().focus_entered.connect(_refresh_metadata)
 
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_WM_DPI_CHANGE, NOTIFICATION_WM_POSITION_CHANGED] and is_node_ready() and is_inside_tree():
+		_size_window(false)
+
+func _size_window(initial: bool) -> void:
+	var window := get_window()
+	var screen := window.current_screen
+	var usable := DisplayServer.screen_get_usable_rect(screen).size
+	if usable.x <= 0 or usable.y <= 0: return
+	var available := usable - (window.get_size_with_decorations() - window.size)
+	var minimum := Vector2(720, 450)
+	var scale_factor := minf(UI.display_scale(screen), minf(available.x / minimum.x, available.y / minimum.y))
+	var previous := window.content_scale_factor
+	if not initial and is_equal_approx(scale_factor, previous): return
+	var logical := Vector2(window.size) / previous
+	window.content_scale_factor = scale_factor
+	window.min_size = Vector2i((minimum * scale_factor).floor())
+	if window.mode == Window.MODE_WINDOWED and not OS.has_feature("embedded_in_editor"):
+		if initial and "--resolution" not in OS.get_cmdline_args():
+			logical = Vector2(1152, 800)
+		elif initial:
+			return
+		window.size = Vector2i((logical * scale_factor).round()).min(available)
+		if initial: window.move_to_center()
+
 func _build_ui() -> void:
 	var bg := ColorRect.new()
 	bg.color = UI.BG
@@ -66,109 +99,170 @@ func _build_ui() -> void:
 	layout.add_theme_constant_override("separation", 0)
 	add_child(layout)
 	var header := PanelContainer.new()
-	header.add_theme_stylebox_override("panel", UI.box(Color("#191c21"), 0, Color.TRANSPARENT, 25, 15))
+	header.custom_minimum_size.y = 44
+	header.add_theme_stylebox_override("panel", UI.box(UI.BG, 0, Color.TRANSPARENT, 12, 4))
 	layout.add_child(header)
 	var bar := HBoxContainer.new()
 	header.add_child(bar)
+	var identity := HBoxContainer.new()
+	identity.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar.add_child(identity)
 	var mark := Mark.new()
-	mark.custom_minimum_size = Vector2(32, 32)
-	bar.add_child(mark)
-	bar.add_child(UI.label("AZGodotProjectManager", 22))
-	bar.add_child(VSeparator.new())
-	bar.add_child(UI.label("项目管理器", 16, UI.MUTED))
-	UI.spacer(bar)
-	bar.add_child(UI.button("打开原版 Godot", open_manager))
-	bar.add_child(UI.button("环境设置", open_settings))
-	var content := UI.padding(layout, 23, 18)
+	mark.custom_minimum_size = Vector2(24, 24)
+	identity.add_child(mark)
+	var brand := UI.label("AZGodotProjectManager", 19)
+	brand.theme_type_variation = &"ManagerHeading"
+	brand.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	identity.add_child(brand)
+	var project_icon := TextureRect.new()
+	project_icon.texture = UI.icon("projects")
+	project_icon.modulate = UI.BLUE
+	project_icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	bar.add_child(project_icon)
+	summary = UI.label("Projects", 16, UI.BLUE)
+	summary.theme_type_variation = &"ManagerHeading"
+	bar.add_child(summary)
+	var godot_button := UI.button("Open Godot", open_manager, "launch")
+	godot_button.flat = true
+	bar.add_child(godot_button)
+	var preferences := HBoxContainer.new()
+	preferences.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preferences.alignment = BoxContainer.ALIGNMENT_END
+	bar.add_child(preferences)
+	language_menu = MenuButton.new()
+	language_menu.name = "LanguageMenu"
+	language_menu.flat = true
+	language_menu.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	language_menu.tooltip_text = "Interface language"
+	preferences.add_child(language_menu)
+	var options := language_menu.get_popup()
+	options.add_radio_check_item("简体中文", 0)
+	options.add_radio_check_item("English", 1)
+	_update_language_button(LANGUAGES.find(TranslationServer.get_locale()))
+	options.id_pressed.connect(_change_language)
+	var settings := UI.button("Settings", open_settings, "settings")
+	settings.flat = true
+	preferences.add_child(settings)
+	var content := UI.padding(layout, 4, 0)
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UI.box(UI.SURFACE, 5, Color.TRANSPARENT, 6, 6))
+	content.add_child(panel)
 	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 12)
-	content.add_child(body)
+	body.add_theme_constant_override("separation", 4)
+	panel.add_child(body)
 	var tools := HBoxContainer.new()
 	body.add_child(tools)
-	tools.add_child(UI.button("＋ 创建", _new_project, true))
-	tools.add_child(UI.button("导入…", _import_project))
-	tools.add_child(UI.button("扫描…", _scan_projects))
+	tools.add_child(UI.button("Create", _new_project, "create"))
+	tools.add_child(UI.button("Import…", _import_project, "folder"))
+	tools.add_child(UI.button("Scan…", _scan_projects, "search"))
 	filter = LineEdit.new()
-	filter.placeholder_text = "筛选项目名称或路径"
+	filter.placeholder_text = "Filter projects"
+	filter.right_icon = UI.icon("search")
 	filter.clear_button_enabled = true
 	filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	filter.text_changed.connect(func(_text): refresh())
 	tools.add_child(filter)
+	tools.add_child(UI.label("Sort by", 15, UI.MUTED))
 	order = OptionButton.new()
-	order.add_item("最近修改")
-	order.add_item("项目名称")
+	order.custom_minimum_size = Vector2(196, 34)
+	order.add_item("Last modified")
+	order.add_item("Project name")
 	order.item_selected.connect(func(_index): refresh())
 	tools.add_child(order)
-	var caption := HBoxContainer.new()
-	body.add_child(caption)
-	summary = UI.label("项目", 14, UI.MUTED)
-	caption.add_child(summary)
-	UI.spacer(caption)
-	open_button = UI.button("打开项目", func(): open_project(selected))
-	caption.add_child(open_button)
+	var workspace := HBoxContainer.new()
+	workspace.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(workspace)
 	var list_area := PanelContainer.new()
-	list_area.add_theme_stylebox_override("panel", UI.box(Color("#1b1e22"), 7, UI.LINE, 7, 7))
-	list_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(list_area)
+	list_area.add_theme_stylebox_override("panel", UI.box(UI.LIST, 4, Color.TRANSPARENT, 5, 5))
+	list_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	workspace.add_child(list_area)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	list_area.add_child(scroll)
 	rows = VBoxContainer.new()
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rows.add_theme_constant_override("separation", 4)
+	rows.add_theme_constant_override("separation", 2)
 	scroll.add_child(rows)
 	empty = CenterContainer.new()
 	empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	list_area.add_child(empty)
 	var center := VBoxContainer.new()
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	center.add_theme_constant_override("separation", 10)
+	center.add_theme_constant_override("separation", 5)
 	empty.add_child(center)
-	var glyph := Mark.new()
-	glyph.folder = true
-	glyph.custom_minimum_size = Vector2(58, 58)
-	glyph.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	center.add_child(glyph)
-	empty_title = UI.label("", 20)
+	empty_title = UI.label("", 16)
+	empty_title.theme_type_variation = &"ManagerHeading"
 	empty_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	center.add_child(empty_title)
-	empty_hint = UI.label("", 14, UI.MUTED)
+	empty_hint = UI.label("", 15)
 	empty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	center.add_child(empty_hint)
+	empty_actions = HBoxContainer.new()
+	empty_actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	var action_margin := UI.padding(center, 0, 9)
+	action_margin.add_child(empty_actions)
+	empty_actions.add_child(UI.button("Create New Project", _new_project, "create"))
+	empty_actions.add_child(UI.button("Import Existing Project", _import_project, "folder"))
+	var sidebar := VBoxContainer.new()
+	sidebar.custom_minimum_size.x = 108
+	workspace.add_child(sidebar)
+	sidebar.add_child(HSeparator.new())
+	open_button = UI.button("Open Project", func(): open_project(selected), "edit")
+	sidebar.add_child(open_button)
+	output_button = UI.button("Build Output", func(): log_panel.visible = not log_panel.visible; _show_log(), "output")
+	sidebar.add_child(output_button)
 	log_panel = PanelContainer.new()
-	log_panel.add_theme_stylebox_override("panel", UI.box(Color("#191c20"), 5, UI.LINE))
+	log_panel.add_theme_stylebox_override("panel", UI.box(UI.LIST, 4, UI.LINE))
 	log_panel.visible = false
 	body.add_child(log_panel)
 	var log_box := VBoxContainer.new()
 	log_panel.add_child(log_box)
 	var log_header := HBoxContainer.new()
 	log_box.add_child(log_header)
-	log_title = UI.label("构建输出", 14, UI.MUTED)
+	log_title = UI.label("Build Output", 14, UI.MUTED)
 	log_header.add_child(log_title)
 	UI.spacer(log_header)
-	log_header.add_child(UI.button("收起", func(): log_panel.hide()))
+	log_header.add_child(UI.button("Hide", func(): log_panel.hide()))
 	log_text = TextEdit.new()
+	log_text.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	log_text.editable = false
 	log_text.custom_minimum_size.y = 104
 	log_text.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-	log_text.add_theme_font_size_override("font_size", 13)
+	log_text.add_theme_font_size_override("font_size", 14)
 	log_box.add_child(log_text)
 	var footer := PanelContainer.new()
-	footer.add_theme_stylebox_override("panel", UI.box(Color("#191c21"), 0, Color.TRANSPARENT, 23, 6))
+	footer.add_theme_stylebox_override("panel", UI.box(UI.BG, 0, Color.TRANSPARENT, 12, 4))
 	layout.add_child(footer)
 	var foot := HBoxContainer.new()
 	footer.add_child(foot)
-	env_status = UI.label("", 13, UI.MUTED)
-	foot.add_child(env_status)
 	UI.spacer(foot)
-	foot.add_child(UI.button("构建输出", func(): log_panel.visible = not log_panel.visible; _show_log()))
+	env_status = UI.label("", 14, UI.MUTED)
+	foot.add_child(env_status)
+
+func _update_language_button(index: int) -> void:
+	var options := language_menu.get_popup()
+	language_menu.text = options.get_item_text(index)
+	for i in LANGUAGES.size():
+		options.set_item_checked(i, i == index)
+
+func _change_language(index: int) -> void:
+	var locale: String = LANGUAGES[index]
+	TranslationServer.set_locale(locale)
+	_update_language_button(index)
+	store.set_value("ui", "language", locale)
+	_save()
+	# Static controls retranslate in place. Reformat the live status strings only.
+	_update_environment()
+	_update_summary()
+	_show_log()
 
 func _save() -> void:
 	store.set_value("projects", "items", projects)
 	var error := store.save(settings_file)
 	if error != OK:
-		UI.notice(self, "无法保存设置", error_string(error))
+		UI.notice(self, "Could not save settings", error_string(error))
 
 func _engine_changed(path: String, version: String) -> void:
 	store.set_value("environment", "engine_path", path)
@@ -182,8 +276,8 @@ func _sdk_changed(path: String) -> void:
 	_update_environment()
 
 func _update_environment() -> void:
-	var engine := "Godot 未配置" if environment.engine_version.is_empty() else "Godot " + environment.engine_version.get_slice(".stable", 0)
-	env_status.text = engine + "    ·    " + ("godot-cpp 4.7 API" if not environment.sdk_path.is_empty() and Projects.sdk_valid(environment.sdk_path) else "godot-cpp 未配置")
+	var engine := tr("Godot not configured") if environment.engine_version.is_empty() else "Godot " + environment.engine_version.get_slice(".stable", 0)
+	env_status.text = engine + "    ·    " + ("godot-cpp 4.7 API" if not environment.sdk_path.is_empty() and Projects.sdk_valid(environment.sdk_path) else tr("godot-cpp not configured"))
 
 func open_settings() -> void:
 	environment.refresh()
@@ -238,12 +332,17 @@ func refresh() -> void:
 		row.open_requested.connect(open_project)
 		row.enable_requested.connect(request_enable)
 		rows.add_child(row)
-	summary.text = "项目  ·  %d" % listed.size()
+	_update_summary()
 	empty.visible = listed.is_empty()
-	empty_title.text = "还没有项目" if projects.is_empty() else "没有匹配的项目"
-	empty_hint.text = "创建一个项目，或导入已有的 project.godot。" if projects.is_empty() else "试试其他名称或目录。"
+	empty_actions.get_parent().visible = projects.is_empty()
+	empty_title.text = "No projects yet" if projects.is_empty() else "No matching projects"
+	empty_hint.text = "Create a project or import an existing project.godot." if projects.is_empty() else "Try a different name or path."
 	open_button.disabled = selected.is_empty() or not FileAccess.file_exists(Projects.settings(selected))
+	output_button.disabled = selected.is_empty()
 	_show_log()
+
+func _update_summary() -> void:
+	summary.text = "Scanning for projects…" if scan_thread != null else tr("Projects  ·  %d") % rows.get_child_count()
 
 func _select(path: String) -> void:
 	selected = path
@@ -256,7 +355,7 @@ func _select(path: String) -> void:
 func open_project(path: String) -> int:
 	if path.is_empty(): return -1
 	if not FileAccess.file_exists(Projects.settings(path)):
-		UI.notice(self, "无法打开项目", "找不到 " + Projects.settings(path))
+		UI.notice(self, "Could not open project", tr("File not found: %s") % Projects.settings(path))
 		return -1
 	return _launch(["--editor", "--path", path])
 
@@ -267,34 +366,34 @@ func _launch(arguments: PackedStringArray) -> int:
 	var engine: String = environment.engine_path
 	if not FileAccess.file_exists(engine) or not Projects.engine_supported(environment.engine_version):
 		open_settings()
-		environment.engine_note.text = "请先选择兼容的 Godot 编辑器。"
+		environment.engine_note.text = "Select a compatible Godot editor first."
 		return -1
 	var pid := OS.create_process(engine, arguments)
 	if pid < 0:
-		UI.notice(self, "启动失败", engine)
+		UI.notice(self, "Could not launch Godot", engine)
 	return pid
 
 func _new_project() -> void:
 	create_dialog = ConfirmationDialog.new()
-	create_dialog.title = "创建项目"
+	create_dialog.title = "Create Project"
 	create_dialog.dialog_hide_on_ok = false
-	create_dialog.get_ok_button().text = "创建"
-	create_dialog.get_cancel_button().text = "取消"
+	create_dialog.get_ok_button().text = "Create"
+	create_dialog.get_cancel_button().text = "Cancel"
 	var form := VBoxContainer.new()
 	create_dialog.add_child(form)
-	var line := UI.field(form, "项目名称")
+	var line := UI.field(form, "Project name")
 	new_name = LineEdit.new()
 	new_name.placeholder_text = "MyGame"
 	new_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	line.add_child(new_name)
-	line = UI.field(form, "父目录（将创建同名项目文件夹）")
+	line = UI.field(form, "Parent folder (the project will have its own subfolder)")
 	new_parent = LineEdit.new()
 	new_parent.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	new_parent.text = store.get_value("projects", "last_parent", "")
 	line.add_child(new_parent)
-	line.add_child(UI.button("浏览…", func(): UI.picker(create_dialog, "选择父目录", FileDialog.FILE_MODE_OPEN_DIR, func(p): new_parent.text = p)))
+	line.add_child(UI.button("Browse…", func(): UI.picker(create_dialog, "Select Parent Folder", FileDialog.FILE_MODE_OPEN_DIR, func(p): new_parent.text = p)))
 	new_cpp = CheckBox.new()
-	new_cpp.text = "使用 C++（AZGodotBuildTool）"
+	new_cpp.text = "Use C++ (AZGodotBuildTool)"
 	form.add_child(new_cpp)
 	create_dialog.confirmed.connect(_create_confirmed)
 	_modal(create_dialog, Vector2i(540, 270))
@@ -309,12 +408,12 @@ func _modal(dialog: AcceptDialog, dialog_size: Vector2i) -> void:
 func _create_confirmed() -> void:
 	var cpp := new_cpp.button_pressed
 	if cpp and not _environment_ready():
-		UI.notice(create_dialog, "C++ 环境未就绪", "请先在环境设置中选择 godot-cpp，并确认构建工具可用。")
+		UI.notice(create_dialog, "C++ tools are not ready", "Select godot-cpp in Environment Settings and make sure the build tool is available.")
 		return
 	var parent := Projects.normalize(new_parent.text.strip_edges())
 	var result := Projects.create(parent, new_name.text, cpp)
 	if not str(result.error).is_empty():
-		UI.notice(create_dialog, "无法创建项目", result.error)
+		UI.notice(create_dialog, "Could not create project", result.error)
 		return
 	store.set_value("projects", "last_parent", parent)
 	create_dialog.hide()
@@ -322,28 +421,28 @@ func _create_confirmed() -> void:
 	if cpp: request_enable(result.root)
 
 func _import_project() -> void:
-	UI.picker(self, "导入 Godot 项目", FileDialog.FILE_MODE_OPEN_ANY, import_path)
+	UI.picker(self, "Import Godot Project", FileDialog.FILE_MODE_OPEN_ANY, import_path)
 
 func import_path(path: String) -> void:
 	var root := path if DirAccess.dir_exists_absolute(path) else path.get_base_dir()
 	if (not DirAccess.dir_exists_absolute(path) and path.get_file() != "project.godot") or not FileAccess.file_exists(Projects.settings(root)):
-		UI.notice(self, "无法导入", "请选择 project.godot 或包含它的项目目录。")
+		UI.notice(self, "Could not import project", "Select project.godot or the folder containing it.")
 		return
 	register_paths([root], true)
 
 func _scan_projects() -> void:
 	if scan_thread != null: return
-	UI.picker(self, "扫描目录", FileDialog.FILE_MODE_OPEN_DIR, scan_path)
+	UI.picker(self, "Scan Folder", FileDialog.FILE_MODE_OPEN_DIR, scan_path)
 
 func scan_path(path: String) -> void:
 	if scan_thread != null: return
-	summary.text = "正在扫描项目…"
+	summary.text = "Scanning for projects…"
 	scan_thread = Thread.new()
 	var error := scan_thread.start(Projects.scan.bind(path))
 	if error != OK:
 		scan_thread = null
 		refresh()
-		UI.notice(self, "无法扫描", error_string(error))
+		UI.notice(self, "Could not scan folder", error_string(error))
 		return
 	while scan_thread.is_alive():
 		await get_tree().process_frame
@@ -351,7 +450,7 @@ func scan_path(path: String) -> void:
 	scan_thread = null
 	if paths.is_empty():
 		refresh()
-		UI.notice(self, "扫描完成", "所选目录内没有找到 project.godot。")
+		UI.notice(self, "Scan complete", "No project.godot files were found in this folder.")
 	else:
 		register_paths(paths, true)
 
@@ -361,7 +460,7 @@ func register_paths(paths: PackedStringArray, offer_cpp: bool) -> void:
 		var key := _key(path)
 		var info := Projects.describe(key)
 		if not str(info.error).is_empty():
-			UI.notice(self, "无法读取项目", Projects.settings(key))
+			UI.notice(self, "Could not read project", Projects.settings(key))
 			continue
 		if not projects.has(key): projects[key] = {}
 		descriptions[key] = info
@@ -374,21 +473,21 @@ func register_paths(paths: PackedStringArray, offer_cpp: bool) -> void:
 
 func _offer_conversion(paths: PackedStringArray) -> void:
 	var dialog := ConfirmationDialog.new()
-	dialog.title = "启用 C++"
-	dialog.get_cancel_button().text = "保留当前项目"
+	dialog.title = "Enable C++"
+	dialog.get_cancel_button().text = "Keep as is"
 	var checks: Array[CheckBox] = []
 	if paths.size() == 1:
-		dialog.dialog_text = "为「%s」启用 C++ 项目结构并执行首次构建吗？\n%s" % [Projects.describe(paths[0]).name, paths[0]]
+		dialog.dialog_text = tr("Enable C++ for “%s” and run its first build?\n%s") % [Projects.describe(paths[0]).name, paths[0]]
 		dialog.dialog_autowrap = true
-		dialog.get_ok_button().text = "启用 C++"
+		dialog.get_ok_button().text = "Enable C++"
 	else:
-		dialog.get_ok_button().text = "启用选中的项目"
+		dialog.get_ok_button().text = "Enable for selected projects"
 		var scroll := ScrollContainer.new()
 		scroll.custom_minimum_size.y = 145
 		dialog.add_child(scroll)
 		var list := VBoxContainer.new()
 		scroll.add_child(list)
-		list.add_child(UI.label("选择要接入 C++ 构建的项目", 14, UI.MUTED))
+		list.add_child(UI.label("Select projects to enable C++ for", 14, UI.MUTED))
 		for path in paths:
 			var check := CheckBox.new()
 			check.text = "%s  ·  %s" % [Projects.describe(path).name, path]
@@ -398,7 +497,7 @@ func _offer_conversion(paths: PackedStringArray) -> void:
 	dialog.confirmed.connect(func():
 		if not _environment_ready():
 			open_settings()
-			environment.sdk_note.text = "配置完成后，点击对应项目行的「启用 C++」。"
+			environment.sdk_note.text = "After setup, click Enable C++ on the project's row."
 			return
 		for i in paths.size():
 			if paths.size() == 1 or checks[i].button_pressed:
@@ -414,7 +513,7 @@ func request_enable(path: String) -> void:
 	if not _environment_ready():
 		refresh()
 		open_settings()
-		environment.sdk_note.text = "启用 C++ 需要兼容的 godot-cpp。" if not Projects.sdk_valid(environment.sdk_path) else "找不到构建工具：" + Projects.tool_path()
+		environment.sdk_note.text = "A compatible godot-cpp is required to enable C++." if not Projects.sdk_valid(environment.sdk_path) else tr("Build tool not found: %s") % Projects.tool_path()
 		return
 	selected = path
 	queue.append(path)
@@ -440,10 +539,13 @@ func _next_build() -> void:
 			_append_log(path, "> AZGodotBuildTool " + " ".join(args) + "\n")
 			var result := await Runner.build(get_tree(), path, tool, args, func(chunk): _append_log(path, chunk))
 			if result.code != 0:
-				problem = "构建命令退出码 %s\n%s" % [result.code, str(result.text).right(3000)]
+				if result.has("issue"):
+					problem = {"issue":result.issue, "args":result.get("args", [])}
+				else:
+					problem = {"issue":"Build command exited with code %s", "args":[result.code], "message":str(result.text).right(3000)}
 				break
-	if not problem.is_empty(): _append_log(path, problem + "\n")
-	projects[path] = {"build":"ready"} if problem.is_empty() else {"build":"failed", "message":problem}
+	projects[path] = problem
+	projects[path]["build"] = "ready" if problem.is_empty() else "failed"
 	descriptions.erase(path)
 	building = ""
 	_save()
@@ -456,8 +558,14 @@ func _append_log(path: String, chunk: String) -> void:
 
 func _show_log() -> void:
 	if not log_panel.visible: return
-	log_title.text = "构建输出" if selected.is_empty() else "构建输出  ·  " + selected.get_file()
-	log_text.text = logs.get(selected, projects.get(selected, {}).get("message", "暂无构建输出"))
+	log_title.text = "Build Output" if selected.is_empty() else tr("Build Output  ·  %s") % selected.get_file()
+	var record: Dictionary = projects.get(selected, {})
+	var text: String = logs.get(selected, record.get("message", ""))
+	if record.has("issue"):
+		var issue := tr(record.issue)
+		if not record.get("args", []).is_empty(): issue = issue % record.args
+		text = (text + "\n" + issue).strip_edges()
+	log_text.text = tr("No build output yet") if text.is_empty() else text
 	log_text.scroll_vertical = log_text.get_line_count()
 
 func _exit_tree() -> void:

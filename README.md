@@ -8,6 +8,8 @@ AZGodotBuildTool builds a Godot project's C++ code and native addons with one co
 
 The desktop project manager lets you create, import and scan Godot projects, open them in your chosen editor, and enable C++ for an individual project.
 
+The upper-right language button shows the current language (**简体中文** or **English**). Click it to switch. The manager remembers your choice. In Environment Settings, hover over the circular **?** at the right end of either field heading to see its supported versions. The steps below give the Chinese button labels.
+
 **Run from source.** From the repository root, build the CLI with `dotnet build AZGodotBuildTool/AZGodotBuildTool.csproj -c Debug`. Open the [project manager's Godot project](AZGodotProjectManager/project.godot) in Godot 4.7.2 and press **F5**.
 
 1. Open **环境设置** (Environment Settings) and select a Godot editor executable. The manager checks its version and accepts Godot 4.7.x stable. For C++ projects, also select a godot-cpp source directory containing `CMakeLists.txt` and `gdextension/extension_api-4-7.json`. If the directory is unsuitable, you can choose another one or select the supported `10.0.0-stable` download. The download starts after you confirm the version and destination.
