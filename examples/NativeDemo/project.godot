@@ -1,0 +1,17 @@
+config_version=5
+
+[application]
+config/name="NativeDemo"
+run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[AZGodotBuildTool]
+tool_path="../../AZGodotBuildTool/bin/Debug/net10.0/AZGodotBuildTool.dll"
+godot_cpp_path=".build/godot-cpp"
+
+[display]
+window/size/viewport_width=720
+window/size/viewport_height=360
+
+[rendering]
+renderer/rendering_method="gl_compatibility"

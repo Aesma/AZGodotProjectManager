@@ -1,0 +1,25 @@
+# Local build, editor and IDE state
+.build/
+.godot/
+.idea/
+.vs/
+*.AZGodotBuildTool.sln
+*.user
+*.suo
+*.tmp
+*.log
+.DS_Store
+/AZGodotBuildTool/bin/
+/AZGodotBuildTool/obj/
+
+# NativeDemo rebuilds its game and addon alongside their generated descriptors.
+/examples/NativeDemo/Binaries/
+/examples/NativeDemo/addons/demo_label/bin/
+/examples/NativeDemo/addons/demo_label/demo_label.gdextension
+/examples/NativeDemo/addons/demo_label/demo_label.gdextension.uid
+
+# Supply the Windows SQLite SDK locally.
+/examples/NativeDemo/ThirdParty/SQLite/
+
+# Local design notes
+/Godot项目构建方案.md
