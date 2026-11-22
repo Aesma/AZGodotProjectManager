@@ -1,83 +1,106 @@
-# AZGodotBuildTool
+# AZGodotProjectManager
 
 [English](README.md)
 
-AZGodotBuildTool 用一条命令构建整个 Godot 项目的 C++ 代码和原生 addon。它发现模块、执行可选的 C# 构建规则、生成 GDExtension 类注册代码，再通过 CMake 编译和部署原生库。命令行和生成的 Visual Studio 解决方案共用同一套构建流程。
+AZGodotProjectManager 是一个 Godot 桌面项目管理器，用于创建、导入、扫描和打开项目。你可以单独为某个项目启用 C++，由管理器调用 AZGodotBuildTool 生成 IDE 工程，一次构建游戏本体和原生 addon。
 
-## AZGodotProjectManager 项目管理器
+## 打开第一个项目
 
-桌面项目管理器支持创建、导入和扫描 Godot 项目，用指定的编辑器打开项目，以及为单个项目启用 C++。
+1. **启动管理器**。使用 Windows 打包版时，直接运行 `AZGodotProjectManager.exe`。从源码运行时，在 Godot 4.7.2 中导入[管理器的 Godot 工程](AZGodotProjectManager/project.godot)，打开后按 **F5**。
+2. **选择编辑器**。点击 **环境设置**，在 **Godot 编辑器** 一栏选择本机的编辑器可执行文件。管理器支持 Godot 4.7.x 稳定版，选中其他版本时会弹窗提示。将鼠标停在字段标题最右侧的 **?** 上，可查看该项支持的版本。
+3. **添加项目**。点击 **创建** 新建项目，点击 **导入** 选择已有项目的目录或 `project.godot` 文件，或点击 **扫描** 查找某个目录下的项目。导入或扫描后，如果弹窗询问是否启用 C++，可以选择 **保留当前项目**，沿用原有配置。
+4. **打开项目**。双击项目行，或选中后点击 **打开项目**，即可进入该项目的编辑器。要打开所选引擎自带的项目管理器，点击 **打开原版 Godot**。
 
-右上角的语言按钮显示当前语言（**简体中文** 或 **English**），点击即可切换。首次启动跟随系统语言，手动选择后会记住偏好。在环境设置中，将鼠标悬停在字段标题行最右端的圆形 **?** 上，可查看支持的版本。
+右上角的语言按钮显示当前语言，点击可切换简体中文和英语。管理器会记住你的选择。
 
-**从源码运行。** 在仓库根目录执行 `dotnet build AZGodotBuildTool/AZGodotBuildTool.csproj -c Debug` 编译构建工具。用 Godot 4.7.2 打开[项目管理器的 Godot 工程](AZGodotProjectManager/project.godot)，按 **F5** 启动。
+## 为项目启用 C++
 
-1. 打开 **环境设置**，选择本机 Godot 编辑器的可执行文件。管理器会读取版本，支持 Godot 4.7.x stable。使用 C++ 时，还需选择含有 `CMakeLists.txt` 和 `gdextension/extension_api-4-7.json` 的 godot-cpp 源码目录。目录不合适时，可以重新选择，也可以选择下载受支持的 `10.0.0-stable`。确认版本和保存位置后才会开始下载。
-2. 用 **创建** 新建项目，用 **导入** 选择已有项目目录或 `project.godot`，或用 **扫描** 查找指定目录下的项目。新建时勾选 **使用 C++** 即可创建 C++ 项目。导入的项目也可以保留为普通 Godot 项目。
-3. 要为某个已有项目启用 C++，勾选**该项目行右上角的「启用 C++」**。管理器只转换这一行对应的项目，保留原有主场景，并调用构建工具生成工程、完成首次 Debug 构建。可在 **构建输出** 查看编译日志，失败后可以从同一行重试。
-4. 双击项目或点击 **打开项目**，进入该项目的编辑器。点击 **打开原版 Godot**，打开所选引擎自带的项目管理器。
+C++ 构建需要 .NET 10 SDK、CMake 3.21 或更高版本、Python 3，以及目标平台的原生工具链。
 
-**打包 Windows 桌面版。** 在仓库根目录运行[打包脚本](AZGodotProjectManager/package_windows.ps1)，将以下命令中的编辑器路径换成本机路径。
+| 目标平台 | 原生工具 | NativeDemo 验证情况 |
+| --- | --- | --- |
+| Windows x64 | MSVC C++ 构建工具、Windows SDK、Visual Studio CMake 生成器 | 已验证 Debug 和 Release 构建，以及导出的 Release 游戏 |
+| Linux x64 / arm64 | Ninja 和 GCC 或 Clang | 已在 x64 Debug 下用 Godot 运行游戏和 addon |
+| macOS arm64 / x64 | Ninja、Apple Clang、macOS SDK | 已为两种架构生成 CMake 工程，本机构建和运行待验证 |
+
+1. 从源码运行管理器时，先在仓库根目录执行下面的命令，编译一次 C# 构建工具。Windows 打包版已在 `BuildTool/` 中包含该工具。
+
+   ```shell
+   dotnet build AZGodotBuildTool/AZGodotBuildTool.csproj -c Debug
+   ```
+
+2. 打开 **环境设置**，将 **godot-cpp 源码目录** 指向兼容版本的源码根目录。当前支持 `10.0.0-stable`，使用 Godot 4.7 API。管理器会检查 `CMakeLists.txt` 和 `gdextension/extension_api-4-7.json`。如果缺少文件，可以重新选择目录，也可以选择版本和安装位置，点击 **确认下载**。
+3. 新建项目时，勾选 **使用 C++（AZGodotBuildTool）**。对于已有项目，勾选该项目行右上角的 **启用 C++**。如果检测到已有 C++ 源码，按钮文字为 **接入 C++ 构建**。行内复选框只作用于这一行的项目。扫描出多个项目时，也可以在转换弹窗中逐个勾选。
+4. 管理器将构建工具和 godot-cpp 的路径写入该项目的 `project.godot`，按需创建起始模块，生成 IDE 工程并执行首次 Debug 构建。已有项目会保留原来的主场景。点击 **构建输出** 可查看编译日志。构建失败时，修复日志指出的问题后即可在同一行重试。
+
+## 仓库结构
+
+| 目录 | 从哪里开始 |
+| --- | --- |
+| `AZGodotProjectManager/` | 在 Godot 中打开 [project.godot](AZGodotProjectManager/project.godot) 开发桌面界面。项目列表、语言切换和构建按钮的逻辑在 [main.gd](AZGodotProjectManager/main.gd)。 |
+| `AZGodotBuildTool/` | 在 Rider 或 Visual Studio 中打开 [AZGodotBuildTool.csproj](AZGodotBuildTool/AZGodotBuildTool.csproj) 开发 C# 命令行工具。工程生成、编译和部署从 [Program.cs](AZGodotBuildTool/Program.cs) 进入。 |
+| `examples/NativeDemo/` | 编译原生库后，用 Godot 打开[示例工程](examples/NativeDemo/project.godot)。[Main.tscn](examples/NativeDemo/Main.tscn) 以内置 `Control` 为根节点，下面各挂一个游戏节点和一个 addon 标签节点。 |
+
+## 构建并运行 NativeDemo
+
+**准备依赖**。先用上面的 `dotnet build` 命令编译构建工具。示例默认在 `examples/NativeDemo/.build/godot-cpp/` 查找 godot-cpp。要复用已有源码，可在示例的 `project.godot` 中将 `[AZGodotBuildTool]` 下的 `godot_cpp_path` 改为对应目录。
+
+SQLite 是示例中 `GameData` 模块的依赖。Windows 下需自行准备配套的 SQLite 头文件、x64 导入库和 DLL，放到 `examples/NativeDemo/` 下的以下位置。若 DLL 包提供的是导出定义文件，可在 MSVC 开发者终端执行 `lib /machine:x64 /name:sqlite3.dll /def:sqlite3.def /out:sqlite3.lib` 生成导入库。
+
+```text
+ThirdParty/SQLite/include/sqlite3.h
+ThirdParty/SQLite/lib/Win64/sqlite3.lib
+ThirdParty/SQLite/bin/Win64/sqlite3.dll
+```
+
+Linux 下需要安装 SQLite 开发头文件和库。macOS 下使用系统 SDK 提供的 SQLite。
+
+**编译游戏和 addon**。从仓库根目录执行下面的命令。
+
+```shell
+cd examples/NativeDemo
+dotnet ../../AZGodotBuildTool/bin/Debug/net10.0/AZGodotBuildTool.dll build
+```
+
+用 Godot 打开示例并按 **F5**。游戏节点查询内存中的 SQLite 数据库，在「输出」面板打印 `SQLite score: 42`。addon 会在游戏窗口显示 `Hello from LabelStyle!`。
+
+### IDE 与命令行
+
+在 Windows 上，从 `examples/NativeDemo/` 执行下面的命令，为 Rider 或 Visual Studio 生成解决方案。
+
+```shell
+dotnet ../../AZGodotBuildTool/bin/Debug/net10.0/AZGodotBuildTool.dll generate --ide vs
+```
+
+打开 `NativeDemo.AZGodotBuildTool.sln`。在 IDE 中执行 Build、Clean 或 Rebuild 时，解决方案会按当前配置调用同一个项目级构建工具。每次构建都会发现新增的源码文件。要让它们显示在 IDE 文件树中，再执行一次 `generate`。
+
+使用 `generate --ide cmake` 可以生成 CMake 工程，也可为其他平台生成工程文件。例如，在 Windows 上执行 `generate --ide cmake --platform macos --arch arm64` 可生成 macOS arm64 的工程。实际编译需要在与目标系统和架构匹配的主机上进行。Linux 和 macOS 本机生成工程时，还会生成 `compile_commands.json`。
+
+### 模块与 addon
+
+构建工具从 `Source/<Module>/` 发现游戏模块，将它们链接为一个游戏库。在 `addons/<addon>/Source/<Module>/` 下，每个 addon 的模块会链接为该 addon 自己的库。可选的 `<Module>.Build.cs` 用于声明模块依赖、头文件目录、链接库和运行时文件。
+
+- 游戏的 `Gameplay` 私有依赖 `GameData`，用它提供的接口读取存档数据。SQLite 的配置集中在 `GameData` 中。[Gameplay 构建规则](examples/NativeDemo/Source/Gameplay/Gameplay.Build.cs) · [GameData 构建规则](examples/NativeDemo/Source/GameData/GameData.Build.cs)
+- addon 的 `DemoLabel` 依赖 `LabelStyle` 来获取显示文字。依赖方可以使用模块 `Public/` 中的头文件。公共依赖会传递给下游模块，私有依赖仅用于编译声明它的模块。[DemoLabel 构建规则](examples/NativeDemo/addons/demo_label/Source/DemoLabel/DemoLabel.Build.cs)
+
+构建工具为模块头文件中声明的普通 `GDCLASS` 类型生成注册代码，在 Godot 的场景初始化阶段先注册基类，再注册派生类。方法、属性和信号在类自己的 `_bind_methods()` 中绑定。构建完成后，工具部署原生库，并将当前平台的库映射写入对应的 `.gdextension` 文件。
+
+## 将项目管理器打包为 Windows 应用
+
+在仓库根目录运行打包脚本，将编辑器路径换成本机的 Godot 4.7.2 可执行文件。
 
 ```powershell
 .\AZGodotProjectManager\package_windows.ps1 -Editor 'C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe'
 ```
 
-脚本默认使用编辑器已安装的 Windows Release 导出模板。若要指定本地模板文件，可追加 `-ReleaseTemplate 'C:\path\to\windows_release_x86_64.exe'`。打包后，打开 `AZGodotProjectManager/.build/Windows-x64/` 中的 `AZGodotProjectManager.exe`。分发时请一并复制该目录内的 PCK 和 `BuildTool/`。构建 C++ 项目仍需 .NET 10 SDK 和下文列出的原生工具链。
+脚本会发布 C# 构建工具，并使用已安装的 Windows Release 模板导出管理器。要指定本地模板，可追加 `-ReleaseTemplate 'C:\path\to\windows_release_x86_64.exe'`。分发时复制整个 `AZGodotProjectManager/.build/Windows-x64/` 目录，让可执行文件、PCK 和 `BuildTool/` 保持在一起。[管理器打包脚本](AZGodotProjectManager/package_windows.ps1)
 
-## 构建 NativeDemo
+## 将 NativeDemo 游戏导出为 Windows 应用
 
-示例基于 **Godot 4.7.2**，使用 **4.7** 版 C++ API。需要 .NET 10 SDK、CMake 3.21 或更高版本、Python 3，以及当前平台的原生工具链。
-
-| 主机平台 | 原生工具 | 验证情况 |
-| --- | --- | --- |
-| Windows x64 | MSVC C++ 构建工具、Windows SDK、Visual Studio CMake 生成器 | 已验证 Debug、Release 构建和独立 Release 游戏 |
-| Linux x64 / arm64 | Ninja、GCC 或 Clang、SQLite 开发头文件与库 | x64 Debug 游戏和 addon 已在 Godot 中运行 |
-| macOS arm64 / x64 | Ninja、Apple Clang、包含 SQLite 的 macOS SDK | 两种架构均已生成 CMake 工程，原生运行待验证 |
-
-1. 将 [godot-cpp 10.0.0-stable 源码](https://github.com/godotengine/godot-cpp/releases/tag/10.0.0-stable)放到 `examples/NativeDemo/.build/godot-cpp/`，也可以在 [project.godot](examples/NativeDemo/project.godot) 中将 `godot_cpp_path` 指向已有源码目录。该目录下应有 `CMakeLists.txt` 和 `gdextension/extension_api-4-7.json`。
-2. Windows 用户在 `examples/NativeDemo/` 下自行放置以下同版本的 x64 [SQLite 开发文件](https://sqlite.org/download.html)。如果官方 DLL 包提供的是 `.def` 导出表，可以在 MSVC 开发者终端执行 `lib /machine:x64 /name:sqlite3.dll /def:sqlite3.def /out:sqlite3.lib` 生成导入库。Linux 和 macOS 上的示例链接系统 SQLite。
-
-   ```text
-   ThirdParty/SQLite/include/sqlite3.h
-   ThirdParty/SQLite/lib/Win64/sqlite3.lib
-   ThirdParty/SQLite/bin/Win64/sqlite3.dll
-   ```
-
-3. 在仓库根目录编译工具，再进入示例目录构建游戏和 addon。
-
-   ```shell
-   dotnet build AZGodotBuildTool/AZGodotBuildTool.csproj -c Debug
-   cd examples/NativeDemo
-   dotnet ../../AZGodotBuildTool/bin/Debug/net10.0/AZGodotBuildTool.dll build
-   ```
-
-4. 用 Godot 4.7.2 打开 `examples/NativeDemo/project.godot`，按 **F5**。游戏模块查询内存中的 SQLite 数据库，输出 `SQLite score: 42`，addon 在界面上显示 `Hello from LabelStyle!`。
-
-## IDE 和命令行
-
-在 `examples/NativeDemo/` 下执行以下命令。Windows 上第一条命令会生成供 Visual Studio 或 Rider 打开的 `NativeDemo.AZGodotBuildTool.sln`。解决方案中的 Build、Clean、Rebuild 会按当前配置调用工具。Build 每次都能发现新增源码。要让新文件出现在 IDE 文件树中，再执行一次 Generate。
+在 `examples/NativeDemo/` 下执行下面的命令，编译游戏和 addon 的 Release 原生库。
 
 ```shell
-dotnet ../../AZGodotBuildTool/bin/Debug/net10.0/AZGodotBuildTool.dll generate --ide vs
 dotnet ../../AZGodotBuildTool/bin/Debug/net10.0/AZGodotBuildTool.dll build --config release
-dotnet ../../AZGodotBuildTool/bin/Debug/net10.0/AZGodotBuildTool.dll --help
 ```
 
-用 `generate --ide cmake` 生成 CMake 工程。例如，在 Windows 执行 `generate --ide cmake --platform macos --arch arm64` 可以生成 macOS 工程输入。实际编译在与目标匹配的系统和架构上执行。在 Linux 或 macOS 本机生成工程时，还会生成编译数据库。
-
-## 模块目录
-
-| 相对于 `project.godot` 的路径 | 用途 |
-| --- | --- |
-| `Source/<模块>/` | 游戏模块，共同链接成一个游戏原生库。 |
-| `addons/<addon>/Source/<模块>/` | addon 模块，每个原生 addon 生成自己的库和描述文件。 |
-| `<模块目录>/<模块>.Build.cs` | 可选规则，用于声明模块依赖、头文件搜索路径、链接库和运行时文件。 |
-
-工具为头文件中声明的普通 `GDCLASS` 类生成注册代码，在 Scene 初始化阶段先注册基类，再注册派生类。方法、属性和信号在类自己的 `_bind_methods()` 中绑定。
-
-示例中的 [Gameplay](examples/NativeDemo/Source/Gameplay/Gameplay.Build.cs) 依赖 [GameData](examples/NativeDemo/Source/GameData/GameData.Build.cs)，后者配置 SQLite。addon 中的 [DemoLabel](examples/NativeDemo/addons/demo_label/Source/DemoLabel/DemoLabel.Build.cs) 依赖 LabelStyle。依赖方可以使用模块的 `Public/` 头文件。公共依赖会传递给下游，私有依赖用于编译声明它的模块。
-
-## 导出 Windows 示例
-
-先用 `--config release` 构建原生库。[Windows Release 导出预设](examples/NativeDemo/export_presets.cfg)使用的 Godot 4.7.2 标准版 Windows x64 Release 模板路径为 `examples/NativeDemo/.build/export_templates/4.7.2.stable/windows_release_x86_64.exe`。将本地模板放在该位置，或在预设中选择自己的模板。通过 **项目 → 导出 → Windows Release** 导出后，整个 `.build/export/Windows-x64/` 目录可以一起分发，里面包含 EXE、PCK 和运行所需的 DLL。
+在 Godot 中打开示例，选择 **项目 → 导出 → Windows Release**。预设使用 Godot 4.7.2 标准版 Windows x64 Release 模板，路径为示例目录下的 `.build/export_templates/4.7.2.stable/windows_release_x86_64.exe`。将本地模板放到该位置，或在预设中选择它的实际路径。导出后分发整个 `.build/export/Windows-x64/` 目录，其中包含 `NativeDemo.exe`、PCK 和 DLL。[示例游戏导出预设](examples/NativeDemo/export_presets.cfg)
