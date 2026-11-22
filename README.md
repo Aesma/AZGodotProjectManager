@@ -4,6 +4,25 @@
 
 AZGodotBuildTool builds a Godot project's C++ code and native addons with one command. It discovers modules, runs their optional C# build rules, generates GDExtension class registration, and uses CMake to build and deploy the native libraries. The command line and the generated Visual Studio solution use the same build process.
 
+## AZGodotProjectManager
+
+The desktop project manager lets you create, import and scan Godot projects, open them in your chosen editor, and enable C++ for an individual project.
+
+**Run from source.** From the repository root, build the CLI with `dotnet build AZGodotBuildTool/AZGodotBuildTool.csproj -c Debug`. Open the [project manager's Godot project](AZGodotProjectManager/project.godot) in Godot 4.7.2 and press **F5**.
+
+1. Open **环境设置** (Environment Settings) and select a Godot editor executable. The manager checks its version and accepts Godot 4.7.x stable. For C++ projects, also select a godot-cpp source directory containing `CMakeLists.txt` and `gdextension/extension_api-4-7.json`. If the directory is unsuitable, you can choose another one or select the supported `10.0.0-stable` download. The download starts after you confirm the version and destination.
+2. Use **创建** to create a project, **导入** to add a project folder or its `project.godot`, or **扫描** to find projects under a directory. For a new C++ project, check **使用 C++** during creation. Imported projects can also stay as ordinary Godot projects.
+3. To enable C++ later, check **启用 C++** in the upper-right corner of the project's own row. This converts only that project, preserves its existing main scene, and runs project generation and the first Debug build. Open **构建输出** for the compiler log. A failed build can be retried from the same row.
+4. Double-click a project or use **打开项目** to edit it. **打开原版 Godot** opens the selected editor's own project manager.
+
+**Package for Windows.** Run the [packaging script](AZGodotProjectManager/package_windows.ps1) from the repository root, substituting the path to your local Godot editor.
+
+```powershell
+.\AZGodotProjectManager\package_windows.ps1 -Editor 'C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe'
+```
+
+The script uses the editor's installed Windows Release template. To use a local template file, pass `-ReleaseTemplate 'C:\path\to\windows_release_x86_64.exe'`. Launch `AZGodotProjectManager.exe` from `AZGodotProjectManager/.build/Windows-x64/`. Distribute that whole directory, including the PCK and `BuildTool/`. C++ builds still require the .NET 10 SDK and the native tools listed below.
+
 ## Build NativeDemo
 
 The example targets Godot **4.7.2** and the **4.7** C++ API. Install the .NET 10 SDK, CMake 3.21 or newer, Python 3 and the native tools for your host.

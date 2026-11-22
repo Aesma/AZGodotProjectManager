@@ -1,0 +1,7 @@
+#include "ProjectNode.hpp"
+
+#include <godot_cpp/variant/utility_functions.hpp>
+
+void ProjectNode::_ready() {
+    godot::UtilityFunctions::print("ProjectNode ready: ", get_path());
+}
