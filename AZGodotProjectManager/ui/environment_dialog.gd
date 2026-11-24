@@ -14,6 +14,8 @@ var sdk_line: LineEdit
 var engine_note: Label
 var sdk_note: Label
 var engine_button: Button
+var engine_hint := UI.label("?", 16, Color.WHITE)
+var sdk_hint := UI.label("?", 16, Color.WHITE)
 var installer := Installer.new()
 var downloading: ConfirmationDialog
 var save_path: LineEdit
@@ -31,27 +33,26 @@ func _ready() -> void:
 	var form := VBoxContainer.new()
 	form.add_theme_constant_override("separation", 10)
 	add_child(form)
-	var row := _version_field(form, "Godot editor", "Supported Godot editors\n4.7.x stable (tested with 4.7.2)")
+	var row := _version_field(form, "Godot editor", engine_hint)
 	engine_line = _path(row, "Select a Godot executable")
 	engine_button = UI.button("Browse…", _browse_engine)
 	row.add_child(engine_button)
 	engine_note = UI.label("", 14, UI.MUTED)
 	form.add_child(engine_note)
 	form.add_child(HSeparator.new())
-	row = _version_field(form, "godot-cpp source directory", "Supported godot-cpp versions\n10.0.0-stable (Godot 4.7 API)")
+	row = _version_field(form, "godot-cpp source directory", sdk_hint)
 	sdk_line = _path(row, "Select the folder containing CMakeLists.txt")
 	row.add_child(UI.button("Browse…", _browse_sdk))
 	sdk_note = UI.label("", 14, UI.MUTED)
 	form.add_child(sdk_note)
 	refresh()
 
-func _version_field(form: VBoxContainer, caption: String, message: String) -> HBoxContainer:
+func _version_field(form: VBoxContainer, caption: String, hint: Label) -> HBoxContainer:
 	var header := HBoxContainer.new()
 	form.add_child(header)
 	var heading := UI.label(caption, 16)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(heading)
-	var hint := UI.label("?", 16, Color.WHITE)
 	hint.custom_minimum_size = Vector2(24, 24)
 	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -59,7 +60,6 @@ func _version_field(form: VBoxContainer, caption: String, message: String) -> HB
 	hint.add_theme_stylebox_override("normal", UI.box(Color("#494e56"), 12, Color.TRANSPARENT, 0, 0))
 	hint.mouse_filter = Control.MOUSE_FILTER_STOP
 	hint.mouse_default_cursor_shape = Control.CURSOR_HELP
-	hint.tooltip_text = message
 	header.add_child(hint)
 	var row := HBoxContainer.new()
 	form.add_child(row)
@@ -76,6 +76,8 @@ func _path(row: HBoxContainer, placeholder: String) -> LineEdit:
 func refresh() -> void:
 	if not is_instance_valid(engine_line):
 		return
+	engine_hint.tooltip_text = tr("Supported Godot editors\n%s stable") % Projects.api_range_text()
+	sdk_hint.tooltip_text = tr("Supported godot-cpp versions\n%s (Godot %s APIs)") % [Projects.SDK_TAG, Projects.api_range_text()]
 	engine_line.text = engine_path
 	engine_note.text = engine_version if not engine_version.is_empty() else "Godot not configured"
 	sdk_line.text = sdk_path
@@ -100,7 +102,7 @@ func choose_engine(path: String) -> void:
 	if result.code != 0 or not Projects.engine_supported(version):
 		var detail := tr("Unknown") if version.is_empty() else version.left(150)
 		if version == "File not found": detail = tr("File not found")
-		problem = tr("Selected version: %s\nSupported versions: Godot 4.7.x stable.") % detail
+		problem = tr("Selected version: %s\nSupported versions: Godot %s stable.") % [detail, Projects.api_range_text()]
 	else:
 		var help := await Runner.run(get_tree(), binary, ["--help"], Callable(), 8000)
 		if help.code != 0 or not str(help.text).contains("--project-manager"):
@@ -125,7 +127,7 @@ func choose_sdk(path: String) -> void:
 		return
 	sdk_prompt = ConfirmationDialog.new()
 	sdk_prompt.title = "Compatible godot-cpp not found"
-	sdk_prompt.dialog_text = "This folder is missing CMakeLists.txt or the 4.7 API.\nChoose a version of godot-cpp to download?"
+	sdk_prompt.dialog_text = tr("This folder is missing CMakeLists.txt or a supported Godot API (%s).\nChoose a version of godot-cpp to download?") % Projects.api_range_text()
 	sdk_prompt.get_ok_button().text = "Choose version…"
 	sdk_prompt.get_cancel_button().text = "Cancel"
 	sdk_prompt.add_button("Choose another folder", true, "browse")

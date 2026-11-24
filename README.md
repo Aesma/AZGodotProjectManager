@@ -7,7 +7,7 @@ AZGodotProjectManager is a desktop app for creating, importing, finding, and ope
 ## Open your first project
 
 1. **Start the manager.** From a packaged Windows build, launch `AZGodotProjectManager.exe`. From a source checkout, import [the manager's Godot project](AZGodotProjectManager/project.godot) into Godot 4.7.2, open it, and press **F5**.
-2. **Choose your editor.** Click **Settings**, then browse for the **Godot editor** executable. The manager accepts Godot 4.7.x stable and shows a dialog if the selected version is unsupported. Hover over the **?** at the right end of either field heading to see supported versions.
+2. **Choose your editor.** Click **Settings**, then browse for the **Godot editor** executable. The manager accepts stable Godot editors from 4.3 through 4.7, including patch releases and shows a dialog if the selected version is unsupported. Hover over the **?** at the right end of either field heading to see supported versions.
 3. **Add a project.** **Create** starts a new project. **Import…** accepts a project directory or its `project.godot` file. **Scan…** finds projects under a folder. If prompted about C++ after importing or scanning, choose **Keep as is** to keep the project's current setup.
 4. **Open the project.** Double-click its row or select it and click **Open Project**. To launch the chosen editor's own project manager, click **Open Godot**.
 
@@ -29,7 +29,7 @@ C++ builds require the .NET 10 SDK, CMake 3.21 or newer, Python 3, and the nativ
    dotnet build AZGodotBuildTool/AZGodotBuildTool.csproj -c Debug
    ```
 
-2. In **Settings**, set **godot-cpp source directory** to the root of a compatible checkout. The supported release is `10.0.0-stable` for the Godot 4.7 API. The manager looks for `CMakeLists.txt` and `gdextension/extension_api-4-7.json`. If either is missing, you can choose another folder or select a version and destination, then click **Confirm download**.
+2. In **Settings**, set **godot-cpp source directory** to the root of a compatible checkout. The supported godot-cpp release, `10.0.0-stable`, includes API snapshots for Godot 4.3 through 4.7. The manager and CLI read the project's `[application] config/features` to select its major and minor version. For example, a 4.3 project requires `CMakeLists.txt` and `gdextension/extension_api-4-3.json`. When you change the project version, rebuild each platform and configuration you distribute. If the selected directory has no supported SDK, you can choose another folder or select a version and destination, then click **Confirm download**.
 3. For a new project, check **Use C++ (AZGodotBuildTool)** during creation. For an existing project, check **Enable C++** in the upper-right corner of its row. If the manager detects existing C++ source, the action reads **Set up C++ build**. The checkbox acts on that row's project. After a scan, you can also select individual projects in the conversion dialog.
 4. The manager records the tool and godot-cpp paths in the project's `project.godot`, creates a starter module if needed, generates the IDE files, and runs the first Debug build. Converting an existing project preserves its main scene. Open **Build Output** for the compiler log. After a failed build, fix the reported issue and retry from the same row.
 

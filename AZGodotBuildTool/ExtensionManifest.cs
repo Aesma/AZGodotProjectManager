@@ -35,7 +35,10 @@ internal static class ExtensionManifest
             InstallBinary(NativeBuilder.StagedBinary(project, library, target), binary);
 
             string[] previous = File.Exists(library.Manifest) ? File.ReadAllLines(library.Manifest) : [];
-            var lines = previous.Contains($"entry_symbol = \"{library.Symbol}\"") ? previous.ToList() : EmptyDescriptor(library);
+            string minimum = $"compatibility_minimum = \"{project.ApiVersion}\"";
+            // All mappings in a descriptor share one API minimum. Repopulate them as each target is rebuilt.
+            var lines = previous.Contains($"entry_symbol = \"{library.Symbol}\"") && previous.Contains(minimum)
+                ? previous.ToList() : EmptyDescriptor(library, minimum);
             lines[0] = Signature;
             SetMapping(lines, "[libraries]", target.Feature, LibraryValue(library, target));
             SetMapping(lines, "[dependencies]", target.Feature, runtime.Count == 0 ? null : JsonSerializer.Serialize(runtime));
@@ -49,10 +52,15 @@ internal static class ExtensionManifest
     {
         // Stage directories identify locally built targets even if the Source module was removed.
         // A distributed addon can carry our manifest signature without having been built locally.
-        var stage = NativeBuilder.StageDirectory(project, variant);
-        if (!Directory.Exists(stage)) return;
+        // Deployed names are shared by APIs. The last deployed binary may belong to an earlier project version.
+        var stageRoot = Path.Combine(project.BuildDirectory, "stage");
+        if (!Directory.Exists(stageRoot)) return;
+        var stages = Directory.EnumerateDirectories(stageRoot)
+            .Where(dir => Version.TryParse(Path.GetFileName(dir), out _))
+            .Prepend(stageRoot) // Also recognize the original unversioned staging layout.
+            .Select(variant.ConfigPath);
         string suffix = variant.Suffix;
-        foreach (string targetDir in Directory.EnumerateDirectories(stage))
+        foreach (string targetDir in stages.Where(Directory.Exists).SelectMany(Directory.EnumerateDirectories))
         foreach (string output in Directory.EnumerateFiles(targetDir, "*" + suffix))
         {
             var target = Path.GetFileName(targetDir);
@@ -76,16 +84,17 @@ internal static class ExtensionManifest
         SetMapping(lines, "[libraries]", target.Feature, null);
         SetMapping(lines, "[dependencies]", target.Feature, null);
         RemoveUnusedDependencies(project, folder, previous, lines);
-        if (lines.SequenceEqual(EmptyDescriptor(library))) File.Delete(library.Manifest);
+        var minimum = lines.FirstOrDefault(line => line.StartsWith("compatibility_minimum = ", StringComparison.Ordinal));
+        if (minimum is not null && lines.SequenceEqual(EmptyDescriptor(library, minimum))) File.Delete(library.Manifest);
         else NativeBuilder.WriteIfChanged(library.Manifest, string.Join(Environment.NewLine, lines) + Environment.NewLine);
     }
 
     private static string LibraryValue(NativeLibrary library, BuildTarget target) =>
         $"\"./{library.BinaryFolder(target)}/{library.BinaryName(target)}\"";
 
-    private static List<string> EmptyDescriptor(NativeLibrary library) =>
+    private static List<string> EmptyDescriptor(NativeLibrary library, string minimum) =>
         [Signature, "[configuration]", $"entry_symbol = \"{library.Symbol}\"",
-         $"compatibility_minimum = \"{GodotProject.ApiVersion}\"", "", "[libraries]"];
+         minimum, "", "[libraries]"];
 
     private static void SetMapping(List<string> lines, string section, string key, string? value)
     {

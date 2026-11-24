@@ -6,4 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../AZGodotProjectManager/scripts/godot_api_range.json" LogicalName="godot_api_range.json" />
+  </ItemGroup>
 </Project>

@@ -255,6 +255,7 @@ func _change_language(index: int) -> void:
 	_save()
 	# Static controls retranslate in place. Reformat the live status strings only.
 	_update_environment()
+	environment.refresh()
 	_update_summary()
 	_show_log()
 
@@ -277,7 +278,7 @@ func _sdk_changed(path: String) -> void:
 
 func _update_environment() -> void:
 	var engine := tr("Godot not configured") if environment.engine_version.is_empty() else "Godot " + environment.engine_version.get_slice(".stable", 0)
-	env_status.text = engine + "    ·    " + ("godot-cpp 4.7 API" if not environment.sdk_path.is_empty() and Projects.sdk_valid(environment.sdk_path) else tr("godot-cpp not configured"))
+	env_status.text = engine + "    ·    " + ("godot-cpp · " + tr("SDK detected") if Projects.sdk_valid(environment.sdk_path) else tr("godot-cpp not configured"))
 
 func open_settings() -> void:
 	environment.refresh()
@@ -407,11 +408,17 @@ func _modal(dialog: AcceptDialog, dialog_size: Vector2i) -> void:
 
 func _create_confirmed() -> void:
 	var cpp := new_cpp.button_pressed
-	if cpp and not _environment_ready():
-		UI.notice(create_dialog, "C++ tools are not ready", "Select godot-cpp in Environment Settings and make sure the build tool is available.")
-		return
+	if cpp:
+		var api := Projects.new_project_api(environment.engine_version)
+		var problem := Projects.cpp_api_issue(api, environment.sdk_path)
+		if not problem.is_empty():
+			UI.notice(create_dialog, "C++ tools are not ready", tr(problem.issue) % problem.get("args", []))
+			return
+		if not FileAccess.file_exists(Projects.tool_path()):
+			UI.notice(create_dialog, "C++ tools are not ready", tr("Build tool not found: %s") % Projects.tool_path())
+			return
 	var parent := Projects.normalize(new_parent.text.strip_edges())
-	var result := Projects.create(parent, new_name.text, cpp)
+	var result := Projects.create(parent, new_name.text, cpp, environment.engine_version)
 	if not str(result.error).is_empty():
 		UI.notice(create_dialog, "Could not create project", result.error)
 		return

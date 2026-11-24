@@ -79,7 +79,7 @@ static func extract(tree: SceneTree, zip_path: String, stage: String, dest: Stri
 			await tree.process_frame
 	zip.close()
 	if not Projects.sdk_valid(stage):
-		return "The archive is missing CMakeLists.txt or the Godot 4.7 API."
+		return TranslationServer.translate("The archive is missing CMakeLists.txt or a supported Godot API (%s).") % Projects.api_range_text()
 	if DirAccess.dir_exists_absolute(dest) or DirAccess.rename_absolute(stage, dest) != OK:
 		return TranslationServer.translate("Could not install to %s") % dest
 	return ""

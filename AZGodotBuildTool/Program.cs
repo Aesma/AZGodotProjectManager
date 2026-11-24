@@ -2,11 +2,12 @@ namespace AZGodotBuildTool;
 
 internal static class Program
 {
-    private const string Usage = """
+    private static readonly string Usage = $"""
         AZGodotBuildTool generate [--ide vs|cmake] [--platform windows|linux|macos] [--arch x64|arm64] [--config debug|release]
         AZGodotBuildTool build|clean|rebuild [--platform windows|linux|macos] [--arch x64|arm64] [--config debug|release]
         Run from a Godot project or any of its subdirectories.
-        Baseline: Godot 4.7.2, godot-cpp 4.7 API. Builds default to the current OS and architecture.
+        Godot {GodotApiRange.Supported}. The C++ API follows [application] config/features in project.godot.
+        Builds default to the current OS and architecture.
         Windows x64 uses MSVC. Linux and macOS (x64/arm64) use Ninja and a native C++ compiler.
         Generate a foreign CMake project on any host. Build on the matching platform with its SDK.
         In project.godot, [AZGodotBuildTool] tool_path and godot_cpp_path are relative to the project root
@@ -41,7 +42,7 @@ internal static class Program
             Directory.CreateDirectory(project.BuildDirectory);
             using var buildLock = new FileStream(Path.Combine(project.BuildDirectory, "build.lock"),
                 FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            Console.WriteLine($"Project: {project.Root} ({target.Configuration}, {target.Key}, Godot API {GodotProject.ApiVersion})");
+            Console.WriteLine($"Project: {project.Root} ({target.Configuration}, {target.Key}, Godot API {project.ApiVersion})");
             if (command == "clean")
             {
                 Clean(project, target);
@@ -126,7 +127,7 @@ internal static class Program
         string bindings = project.BindingsPath;
         if (!File.Exists(Path.Combine(bindings, "CMakeLists.txt")))
             throw new InvalidOperationException($"godot-cpp not found at '{bindings}'. See AZGodotBuildTool --help.");
-        string apiFile = $"extension_api-{GodotProject.ApiVersion.Replace('.', '-')}.json";
+        string apiFile = $"extension_api-{project.ApiVersion.Replace('.', '-')}.json";
         if (!File.Exists(Path.Combine(bindings, "gdextension", apiFile)))
             throw new InvalidOperationException($"Expected godot-cpp with gdextension/{apiFile} at '{bindings}'.");
         return bindings;

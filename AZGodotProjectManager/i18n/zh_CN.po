@@ -196,14 +196,14 @@ msgstr "godot-cpp 源码目录"
 msgid "Select the folder containing CMakeLists.txt"
 msgstr "选择包含 CMakeLists.txt 的目录"
 
-msgid "Supported Godot editors\n4.7.x stable (tested with 4.7.2)"
-msgstr "支持的 Godot 编辑器版本\n4.7.x 稳定版（已验证 4.7.2）"
+msgid "Supported Godot editors\n%s stable"
+msgstr "支持的 Godot 编辑器版本\n%s 稳定版"
 
 msgid "SDK detected"
 msgstr "已识别 SDK"
 
-msgid "Supported godot-cpp versions\n10.0.0-stable (Godot 4.7 API)"
-msgstr "支持的 godot-cpp 版本\n10.0.0-stable（Godot 4.7 API）"
+msgid "Supported godot-cpp versions\n%s (Godot %s APIs)"
+msgstr "支持的 godot-cpp 版本\n%s（Godot %s API）"
 
 msgid "Select Godot Editor"
 msgstr "选择 Godot 编辑器"
@@ -214,8 +214,8 @@ msgstr "正在读取引擎版本…"
 msgid "File not found"
 msgstr "文件不存在"
 
-msgid "Selected version: %s\nSupported versions: Godot 4.7.x stable."
-msgstr "所选版本：%s\n支持范围：Godot 4.7.x stable。"
+msgid "Selected version: %s\nSupported versions: Godot %s stable."
+msgstr "所选版本：%s\n支持的版本：Godot %s 稳定版。"
 
 msgid "Unknown"
 msgstr "未知"
@@ -232,8 +232,8 @@ msgstr "选择 godot-cpp 源码目录"
 msgid "Compatible godot-cpp not found"
 msgstr "未找到兼容的 godot-cpp"
 
-msgid "This folder is missing CMakeLists.txt or the 4.7 API.\nChoose a version of godot-cpp to download?"
-msgstr "所选目录缺少 CMakeLists.txt 或 4.7 API。\n要选择版本并下载 godot-cpp 吗？"
+msgid "This folder is missing CMakeLists.txt or a supported Godot API (%s).\nChoose a version of godot-cpp to download?"
+msgstr "所选目录缺少 CMakeLists.txt 或支持的 Godot API（%s）。\n要选择版本并下载 godot-cpp 吗？"
 
 msgid "Choose version…"
 msgstr "选择下载版本…"
@@ -301,8 +301,14 @@ msgstr "目标已存在，请选择新的项目名称。"
 msgid "Could not create project: %s"
 msgstr "创建失败：%s"
 
-msgid "Select godot-cpp with the 4.7 API in Environment Settings."
-msgstr "请在环境设置中选择包含 4.7 API 的 godot-cpp。"
+msgid "No Godot version in project.godot [application] config/features."
+msgstr "project.godot 的 [application] config/features 中缺少 Godot 版本。"
+
+msgid "Project uses Godot %s. Supported versions: %s."
+msgstr "项目使用 Godot %s。支持的版本：%s。"
+
+msgid "Select godot-cpp with the Godot %s API in Environment Settings."
+msgstr "请在环境设置中选择包含 Godot %s API 的 godot-cpp。"
 
 msgid "AZGodotBuildTool.dll not found: %s"
 msgstr "找不到 AZGodotBuildTool.dll：%s"
@@ -355,8 +361,8 @@ msgstr "无法创建 SDK 目录。"
 msgid "Could not write to %s"
 msgstr "无法写入 %s"
 
-msgid "The archive is missing CMakeLists.txt or the Godot 4.7 API."
-msgstr "包中缺少 CMakeLists.txt 或 Godot 4.7 API。"
+msgid "The archive is missing CMakeLists.txt or a supported Godot API (%s)."
+msgstr "压缩包中缺少 CMakeLists.txt 或支持的 Godot API（%s）。"
 
 msgid "Could not install to %s"
 msgstr "无法安装到 %s"

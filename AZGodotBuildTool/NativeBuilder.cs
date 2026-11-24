@@ -7,7 +7,7 @@ namespace AZGodotBuildTool;
 internal static class NativeBuilder
 {
     public static string StageDirectory(GodotProject project, BuildTarget target) =>
-        target.ConfigPath(Path.Combine(project.BuildDirectory, "stage"));
+        target.ConfigPath(Path.Combine(project.BuildDirectory, "stage", project.ApiVersion));
 
     public static string StagedBinary(GodotProject project, NativeLibrary library, BuildTarget target) =>
         Path.Combine(StageDirectory(project, target), library.Target, library.BinaryName(target));
@@ -52,7 +52,7 @@ internal static class NativeBuilder
     }
 
     private static string BuildDirectory(GodotProject project, BuildTarget target) =>
-        target.ConfigPath(Path.Combine(project.BuildDirectory, "native", GodotProject.ApiVersion));
+        target.ConfigPath(Path.Combine(project.BuildDirectory, "native", project.ApiVersion));
 
     private static string Configure(GodotProject project, List<NativeLibrary> libraries, string bindings, BuildTarget target) =>
         ConfigureTree(project, WriteProject(project, libraries, bindings, target), target);
@@ -79,7 +79,7 @@ internal static class NativeBuilder
         };
         cmake.AppendLine($"if(NOT ({toolchain}))\n    message(FATAL_ERROR \"This project targets {target.Key}. Select its native toolchain.\")\nendif()");
         if (target.Platform == DesktopPlatform.Windows) cmake.AppendLine("set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)");
-        cmake.AppendLine($"set(GODOTCPP_API_VERSION {GodotProject.ApiVersion} CACHE STRING \"\" FORCE)");
+        cmake.AppendLine($"set(GODOTCPP_API_VERSION {project.ApiVersion} CACHE STRING \"\" FORCE)");
         string template = config == "Debug" ? "template_debug" : "template_release";
         cmake.AppendLine($"set(GODOTCPP_TARGET {template} CACHE STRING \"\" FORCE)");
         if (libraries.Count > 0) cmake.AppendLine("add_subdirectory(\"${AZGODOTBUILDTOOL_GODOT_CPP}\" godot-cpp)");

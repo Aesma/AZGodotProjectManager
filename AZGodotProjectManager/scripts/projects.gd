@@ -3,6 +3,25 @@ extends RefCounted
 const SECTION := "AZGodotBuildTool"
 const SDK_TAG := "10.0.0-stable"
 const SDK_URL := "https://codeload.github.com/godotengine/godot-cpp/zip/refs/tags/10.0.0-stable"
+const API_RANGE: JSON = preload("res://scripts/godot_api_range.json")
+static var supported_apis := _supported_apis()
+static var feature_version := RegEx.create_from_string(r"^([0-9]+\.[0-9]+)(?:\.[0-9]+)?$")
+static var stable_version := RegEx.create_from_string(r"^([0-9]+\.[0-9]+)(?:\.[0-9]+)?\.stable(?:\.|$)")
+
+static func _supported_apis() -> PackedStringArray:
+	var versions := PackedStringArray()
+	for minor in range(int(API_RANGE.data.MinMinor), int(API_RANGE.data.MaxMinor) + 1):
+		versions.append("%d.%d" % [API_RANGE.data.Major, minor])
+	return versions
+
+static func api_range_text() -> String:
+	return "%s–%s" % [supported_apis[0], supported_apis[-1]]
+
+static func project_api(cfg: ConfigFile) -> String:
+	for feature in cfg.get_value("application", "config/features", PackedStringArray()):
+		var matched := feature_version.search(str(feature))
+		if matched: return matched.get_string(1)
+	return ""
 
 static func normalize(path: String) -> String:
 	return path.replace("\\", "/").simplify_path()
@@ -10,8 +29,22 @@ static func normalize(path: String) -> String:
 static func settings(root: String) -> String:
 	return root.path_join("project.godot")
 
-static func sdk_valid(path: String) -> bool:
-	return FileAccess.file_exists(path.path_join("CMakeLists.txt")) and FileAccess.file_exists(path.path_join("gdextension/extension_api-4-7.json"))
+static func sdk_valid(path: String, api := "") -> bool:
+	if path.is_empty() or not FileAccess.file_exists(path.path_join("CMakeLists.txt")):
+		return false
+	for version in supported_apis:
+		if (api.is_empty() or api == version) and FileAccess.file_exists(path.path_join("gdextension/extension_api-%s.json" % version.replace(".", "-"))):
+			return true
+	return false
+
+static func cpp_api_issue(api: String, sdk: String) -> Dictionary:
+	if api.is_empty():
+		return {"issue":"No Godot version in project.godot [application] config/features."}
+	if api not in supported_apis:
+		return {"issue":"Project uses Godot %s. Supported versions: %s.", "args":[api, api_range_text()]}
+	if not sdk_valid(sdk, api):
+		return {"issue":"Select godot-cpp with the Godot %s API in Environment Settings.", "args":[api]}
+	return {}
 
 static func tool_path() -> String:
 	var bundled := OS.get_executable_path().get_base_dir().path_join("BuildTool/AZGodotBuildTool.dll")
@@ -25,10 +58,18 @@ static func engine_binary(path: String) -> String:
 		return path.path_join("Contents/MacOS/Godot")
 	return path
 
+static func engine_api(version: String) -> String:
+	var matched := stable_version.search(version.strip_edges())
+	return matched.get_string(1) if matched else ""
+
 static func engine_supported(version: String) -> bool:
-	var expr := RegEx.new()
-	expr.compile("^4\\.7(?:\\.[0-9]+)?\\.stable(?:\\.|$)")
-	return expr.search(version.strip_edges()) != null
+	return engine_api(version) in supported_apis
+
+static func new_project_api(editor_version: String) -> String:
+	if not editor_version.is_empty():
+		return engine_api(editor_version)
+	var host := Engine.get_version_info()
+	return "%d.%d" % [host.major, host.minor]
 
 static func modules_exist(root: String) -> bool:
 	var dirs := PackedStringArray([root.path_join("Source")])
@@ -64,11 +105,7 @@ static func describe(root: String) -> Dictionary:
 	var err := cfg.load(path)
 	if err != OK:
 		return {"root":root, "name":root.get_file(), "error":"Could not read project.godot", "version":"", "managed":false, "native":false, "icon":"", "time":0}
-	var version := ""
-	for feature in cfg.get_value("application", "config/features", PackedStringArray()):
-		if str(feature).get_slice(".", 0).is_valid_int():
-			version = feature
-			break
+	var version := project_api(cfg)
 	var icon := str(cfg.get_value("application", "config/icon", ""))
 	var native := modules_exist(root)
 	return {"root":root, "name":str(cfg.get_value("application", "config/name", root.get_file())),
@@ -101,7 +138,7 @@ static func write_text(path: String, text: String) -> Error:
 		return FileAccess.get_open_error()
 	return OK if f.store_string(text) else ERR_FILE_CANT_WRITE
 
-static func create(parent: String, title: String, cpp: bool) -> Dictionary:
+static func create(parent: String, title: String, cpp: bool, editor_version := "") -> Dictionary:
 	title = title.strip_edges()
 	if title.is_empty() or not title.is_valid_filename() or title in [".", ".."]:
 		return {"error":"Enter a valid project name."}
@@ -110,7 +147,10 @@ static func create(parent: String, title: String, cpp: bool) -> Dictionary:
 	var root := normalize(parent.path_join(title))
 	if DirAccess.dir_exists_absolute(root) or FileAccess.file_exists(root):
 		return {"error":"The destination already exists. Choose another project name."}
-	var config := "config_version=5\n\n[application]\nconfig/name=%s\nrun/main_scene=\"res://Main.tscn\"\nconfig/features=PackedStringArray(\"4.7\", \"GL Compatibility\")\n\n[rendering]\nrenderer/rendering_method=\"gl_compatibility\"\n" % JSON.stringify(title)
+	var api := new_project_api(editor_version)
+	if api not in supported_apis:
+		return {"error":TranslationServer.translate("Select a compatible Godot editor first.")}
+	var config := "config_version=5\n\n[application]\nconfig/name=%s\nrun/main_scene=\"res://Main.tscn\"\nconfig/features=PackedStringArray(\"%s\", \"GL Compatibility\")\n\n[rendering]\nrenderer/rendering_method=\"gl_compatibility\"\n" % [JSON.stringify(title), api]
 	var scene := '[gd_scene format=3]\n\n[node name="Main" type="Node"]\n'
 	if cpp:
 		scene += '\n[node name="ProjectNode" type="ProjectNode" parent="."]\n'
@@ -127,14 +167,14 @@ static func create(parent: String, title: String, cpp: bool) -> Dictionary:
 	return {"root":root, "error":"" if err == OK else TranslationServer.translate("Could not create project: %s") % error_string(err)}
 
 static func enable_cpp(root: String, sdk: String, tool: String) -> Dictionary:
-	if not sdk_valid(sdk):
-		return {"issue":"Select godot-cpp with the 4.7 API in Environment Settings."}
-	if not FileAccess.file_exists(tool):
-		return {"issue":"AZGodotBuildTool.dll not found: %s", "args":[tool]}
 	var cfg := ConfigFile.new()
 	var path := settings(root)
 	if cfg.load(path) != OK:
 		return {"issue":"Could not read %s", "args":[path]}
+	var problem := cpp_api_issue(project_api(cfg), sdk)
+	if not problem.is_empty(): return problem
+	if not FileAccess.file_exists(tool):
+		return {"issue":"AZGodotBuildTool.dll not found: %s", "args":[tool]}
 	var text := FileAccess.get_file_as_string(path)
 	var lines := text.split("\n")
 	var begin := -1

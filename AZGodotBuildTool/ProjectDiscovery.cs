@@ -4,10 +4,21 @@ using System.Text.RegularExpressions;
 
 namespace AZGodotBuildTool;
 
-internal sealed record GodotProject(string Root, string? ToolPath, string BindingsPath)
+internal sealed record GodotApiRange(int Major, int MinMinor, int MaxMinor)
 {
-    // Godot 4.7.2-stable uses godot-cpp's 4.7 API snapshot.
-    public const string ApiVersion = "4.7";
+    public static GodotApiRange Supported { get; } = Load();
+    public bool Contains(Version version) => version.Major == Major && version.Minor >= MinMinor && version.Minor <= MaxMinor;
+    public override string ToString() => $"{Major}.{MinMinor}–{Major}.{MaxMinor}";
+
+    private static GodotApiRange Load()
+    {
+        using var stream = typeof(GodotApiRange).Assembly.GetManifestResourceStream("godot_api_range.json")!;
+        return JsonSerializer.Deserialize<GodotApiRange>(stream)!;
+    }
+}
+
+internal sealed record GodotProject(string Root, string? ToolPath, string BindingsPath, string ApiVersion)
+{
     public string BuildDirectory => Path.Combine(Root, ".build");
 }
 
@@ -49,18 +60,22 @@ internal static class ProjectDiscovery
     {
         string? tool = null;
         string bindings = Path.Combine(root, ".build", "godot-cpp");
-        bool inToolSection = false;
-        foreach (string raw in File.ReadLines(settings))
+        string section = "";
+        string? apiVersion = null;
+        using var file = File.OpenText(settings);
+        while (file.ReadLine() is string raw)
         {
             string line = raw.Trim();
             if (line.StartsWith('['))
             {
-                inToolSection = line.Split(';', 2)[0].TrimEnd() == "[AZGodotBuildTool]";
+                section = line.Split(';', 2)[0].TrimEnd();
                 continue;
             }
-            if (!inToolSection) continue;
             var pair = line.Split('=', 2, StringSplitOptions.TrimEntries);
-            if (pair.Length != 2 || pair[0] is not ("tool_path" or "godot_cpp_path")) continue;
+            if (pair.Length != 2) continue;
+            if (section == "[application]" && pair[0] == "config/features")
+                apiVersion = ReadApiVersion(pair[1], file, settings);
+            if (section != "[AZGodotBuildTool]" || pair[0] is not ("tool_path" or "godot_cpp_path")) continue;
             try
             {
                 // Read just the quoted value. Godot also allows a comment after it.
@@ -77,7 +92,28 @@ internal static class ProjectDiscovery
                 throw new InvalidOperationException($"{settings}: [AZGodotBuildTool] {pair[0]} expects a quoted path.");
             }
         }
-        return new(root, tool, bindings);
+        if (apiVersion is null)
+            throw new InvalidOperationException($"{settings}: [application] config/features must contain a Godot version ({GodotApiRange.Supported}).");
+        return new(root, tool, bindings, apiVersion);
+    }
+
+    private static string? ReadApiVersion(string value, TextReader file, string settings)
+    {
+        // A PackedStringArray can span lines. Read only its quoted values, ignoring comments.
+        const string tokens = """[;#].*|"(?:\\.|[^"\\])*"|[)\]]""";
+        for (string? line = value; line is not null; line = file.ReadLine())
+        {
+            foreach (Match match in Regex.Matches(line, tokens))
+            {
+                string token = match.Value;
+                if (token is ")" or "]") return null;
+                if (token[0] != '"' || !Version.TryParse(token[1..^1], out var version) || version.Revision >= 0) continue;
+                if (!GodotApiRange.Supported.Contains(version))
+                    throw new InvalidOperationException($"{settings}: Godot {version} is outside the supported range {GodotApiRange.Supported}.");
+                return version.ToString(2);
+            }
+        }
+        return null;
     }
 
     public static List<NativeLibrary> DiscoverLibraries(GodotProject project)
